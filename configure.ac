@@ -7,6 +7,25 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 AM_SILENT_RULES([yes])
 
+# Check for GNU Make and prefer it over BSD Make for better compatibility
+AC_PATH_PROG([MAKE], [gmake])
+if test -z "$MAKE"; then
+	AC_PATH_PROG([MAKE], [make])
+fi
+AC_SUBST([MAKE])
+AC_MSG_CHECKING([which make program to use])
+if test -n "$MAKE"; then
+	AC_MSG_RESULT([$MAKE])
+	# Test if it's GNU Make
+	if $MAKE --version 2>/dev/null | grep -q "GNU Make"; then
+		AC_MSG_NOTICE([Using GNU Make: $MAKE])
+	else
+		AC_MSG_WARN([Using non-GNU Make: $MAKE - some features may not work correctly])
+	fi
+else
+	AC_MSG_ERROR([No make program found])
+fi
+
 # use the following arguments for '--with-probe-type' flag
 # v3: openwrt-atlas-probev3
 # v4: openwrt-atlas-probev4
