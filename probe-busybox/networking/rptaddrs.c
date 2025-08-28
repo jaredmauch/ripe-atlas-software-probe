@@ -850,3 +850,115 @@ static void report_err(const char *fmt, ...)
 
 	va_end(ap);
 }
+
+// Portable interface enumeration using getifaddrs()
+static int get_portable_interfaces(portable_if_info_t **interfaces, size_t *count)
+{
+	struct ifaddrs *ifaddr, *ifa;
+	size_t max_count = 64; // Reasonable limit
+	size_t current_count = 0;
+	
+	*interfaces = malloc(max_count * sizeof(portable_if_info_t));
+	if (!*interfaces) {
+		return -1;
+	}
+	
+	if (getifaddrs(&ifaddr) == -1) {
+		free(*interfaces);
+		*interfaces = NULL;
+		return -1;
+	}
+	
+	for (ifa = ifaddr; ifa != NULL && current_count < max_count; ifa = ifa->ifa_next) {
+		if (ifa->ifa_addr == NULL) continue;
+		
+		portable_if_info_t *info = &(*interfaces)[current_count];
+		memset(info, 0, sizeof(portable_if_info_t));
+		
+		strncpy(info->name, ifa->ifa_name, IF_NAMESIZE - 1);
+		info->flags = ifa->ifa_flags;
+		
+		if (ifa->ifa_addr->sa_family == AF_INET) {
+			struct sockaddr_in *addr_in = (struct sockaddr_in *)ifa->ifa_addr;
+			info->addr = addr_in->sin_addr;
+			
+			if (ifa->ifa_netmask) {
+				struct sockaddr_in *netmask_in = (struct sockaddr_in *)ifa->ifa_netmask;
+				info->netmask = netmask_in->sin_addr;
+			}
+			
+			if (ifa->ifa_broadaddr) {
+				struct sockaddr_in *broadcast_in = (struct sockaddr_in *)ifa->ifa_broadaddr;
+				info->broadcast = broadcast_in->sin_addr;
+			}
+		} else if (ifa->ifa_addr->sa_family == AF_INET6) {
+			struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+			info->addr6 = addr_in6->sin6_addr;
+			
+			if (ifa->ifa_netmask) {
+				struct sockaddr_in6 *netmask_in6 = (struct sockaddr_in6 *)ifa->ifa_netmask;
+				// Calculate prefix length from netmask
+				info->prefix_len = 0;
+				for (int i = 0; i < 16; i++) {
+					unsigned char byte = netmask_in6->sin6_addr.s6_addr[i];
+					while (byte & 0x80) {
+						info->prefix_len++;
+						byte <<= 1;
+					}
+				}
+			}
+		}
+		
+		current_count++;
+	}
+	
+	freeifaddrs(ifaddr);
+	*count = current_count;
+	return 0;
+}
+
+static void free_portable_interfaces(portable_if_info_t *interfaces)
+{
+	if (interfaces) {
+		free(interfaces);
+	}
+}
+
+// Portable routing information (basic implementation)
+static int get_portable_routing_info(FILE *of)
+{
+	portable_if_info_t *interfaces = NULL;
+	size_t count = 0;
+	int result = 0;
+	
+	if (get_portable_interfaces(&interfaces, &count) == 0) {
+		fprintf(of, "\"interfaces\": [");
+		for (size_t i = 0; i < count; i++) {
+			if (i > 0) fprintf(of, ",");
+			fprintf(of, "{\"name\":\"%s\",\"flags\":%d", 
+				interfaces[i].name, interfaces[i].flags);
+			
+			if (interfaces[i].addr.s_addr != 0) {
+				char addr_str[INET_ADDRSTRLEN];
+				inet_ntop(AF_INET, &interfaces[i].addr, addr_str, sizeof(addr_str));
+				fprintf(of, ",\"ipv4\":\"%s\"", addr_str);
+			}
+			
+			if (interfaces[i].addr6.s6_addr[0] != 0) {
+				char addr6_str[INET6_ADDRSTRLEN];
+				inet_ntop(AF_INET6, &interfaces[i].addr6, addr6_str, sizeof(addr6_str));
+				fprintf(of, ",\"ipv6\":\"%s\"", addr6_str);
+			}
+			
+			fprintf(of, "}");
+		}
+		fprintf(of, "]");
+		
+		free_portable_interfaces(interfaces);
+	} else {
+		fprintf(of, "\"error\":\"Failed to get interface information\"");
+		result = -1;
+	}
+	
+	return result;
+}
