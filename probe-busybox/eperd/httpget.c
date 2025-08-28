@@ -2078,8 +2078,18 @@ static void reporterr(struct tu_env *env, enum tu_err cause,
 			env->dns_curr->ai_addrlen, namebuf, sizeof(namebuf),
 			NULL, 0, NI_NUMERICHOST);
 
-		snprintf(line, sizeof(line),
-			", " DBQ(dst_addr) ":" DBQ(%s) " }", namebuf);
+		/* Ensure we don't overflow the line buffer */
+		if (strlen(namebuf) + 50 < sizeof(line)) {
+			snprintf(line, sizeof(line),
+				", " DBQ(dst_addr) ":" DBQ(%s) " }", namebuf);
+		} else {
+			/* Truncate the address if it's too long */
+			char truncated[sizeof(line) - 50];
+			strncpy(truncated, namebuf, sizeof(truncated) - 1);
+			truncated[sizeof(truncated) - 1] = '\0';
+			snprintf(line, sizeof(line),
+				", " DBQ(dst_addr) ":" DBQ(%s) " }", truncated);
+		}
 		add_str(state, line);
 
 		state->dnserr= 1;
