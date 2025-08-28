@@ -11,20 +11,23 @@ AM_SILENT_RULES([yes])
 # v3: openwrt-atlas-probev3
 # v4: openwrt-atlas-probev4
 # v5: openwrt-atlas-probev5
+# freebsd: freebsd-software-probe
 # centos: centos-rpm-<PACKAGE_NAME>-<PACKAGE_VERSION>-<PACKAGE_RELEASE>  (ie. centos-rpm-ripe-atlas-probe-5090-1.el7)
 # debian: debian-<PACKAGE_NAME>-<VERSION>  (ie. debian-ripe-atlas-probe-5090)
-AC_ARG_WITH([probe-type], [AS_HELP_STRING([--with-probe-type], [define which probe flavour should be built (v3,v4,v5)])], [], [with_probe_type=no])
+AC_ARG_WITH([probe-type], [AS_HELP_STRING([--with-probe-type], [define which probe flavour should be built (v3,v4,v5,freebsd)])], [], [with_probe_type=no])
 
 probe_type=${with_probe_type}
 AC_SUBST(probe_type)
 
 AS_CASE([$probe_type],
 	[*openwrt*], [probe_scripts_path=$probe_type],
+	[freebsd], [probe_scripts_path=freebsd],
 	[probe_scripts_path=generic])
 AC_SUBST(probe_scripts_path)
 AM_CONDITIONAL([PROBE_TYPE_V3], [test "x${probe_type}" = 'xopenwrt-atlas-probev3'])
 AM_CONDITIONAL([PROBE_TYPE_V4], [test "x${probe_type}" = 'xopenwrt-atlas-probev4'])
 AM_CONDITIONAL([PROBE_TYPE_V5], [test "x${probe_type}" = 'xopenwrt-atlas-probev5'])
+AM_CONDITIONAL([PROBE_TYPE_FREEBSD], [test "x${probe_type}" = 'xfreebsd'])
 
 AC_ARG_ENABLE([chown],
 	      [AS_HELP_STRING([--enable-chown], [set permissions during install @<:@default=yes@:>@])],
