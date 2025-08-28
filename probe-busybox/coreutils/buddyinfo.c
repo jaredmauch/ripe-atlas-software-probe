@@ -79,12 +79,15 @@ int buddyinfo_main(int argc UNUSED_PARAM, char **argv)
 	
 	// Variables for memory processing
 	FILE *fp = NULL;
-	/* Note: aa, i, j, memBlock, jMax are not used in this build */
 	
 #ifdef __linux__
 	// Linux: try /proc/buddyinfo first
 	fp = fopen("/proc/buddyinfo", "r");
 	if (fp) {
+		char aa[256];
+		int i, j;
+		int memBlock = 4; // Start with 4KB
+		int jMax = 11;    // Maximum number of buddy zones
 		
 		fscanf(fp, "%s", aa); 
 		fscanf(fp, "%s", aa);

@@ -19,6 +19,77 @@
 #include "eperd.h"
 #include "atlas_path.h"
 
+/* Define missing TCP header struct members if not defined by system headers */
+#ifndef __FAVOR_BSD
+/* BSD-style TCP header */
+struct tcphdr {
+	uint16_t source;
+	uint16_t dest;
+	uint32_t seq;
+	uint32_t ack_seq;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	uint16_t res1:4, doff:4, fin:1, syn:1, rst:1, psh:1, ack:1, urg:1;
+#else
+	uint16_t doff:4, res1:4, urg:1, ack:1, psh:1, rst:1, syn:1, fin:1;
+#endif
+	uint16_t window;
+	uint16_t check;
+	uint16_t urg_ptr;
+};
+#endif
+
+/* Define missing UDP header struct members if not defined by system headers */
+#ifndef __FAVOR_BSD
+/* BSD-style UDP header */
+struct udphdr {
+	uint16_t source;
+	uint16_t dest;
+	uint16_t len;
+	uint16_t check;
+};
+#endif
+
+/* Define missing IPv6 constants if not defined by system headers */
+#ifndef SOL_IPV6
+#define SOL_IPV6 IPPROTO_IPV6
+#endif
+
+#ifndef IPV6_UNICAST_HOPS
+#define IPV6_UNICAST_HOPS 16
+#endif
+
+#ifndef IPV6_PMTUDISC_DO
+#define IPV6_PMTUDISC_DO 2
+#endif
+
+#ifndef IPV6_PMTUDISC_DONT
+#define IPV6_PMTUDISC_DONT 0
+#endif
+
+#ifndef IPV6_MTU_DISCOVER
+#define IPV6_MTU_DISCOVER 23
+#endif
+
+#ifndef IP_PMTUDISC_DO
+#define IP_PMTUDISC_DO 2
+#endif
+
+#ifndef IP_PMTUDISC_DONT
+#define IP_PMTUDISC_DONT 0
+#endif
+
+#ifndef IP_MTU_DISCOVER
+#define IP_MTU_DISCOVER 10
+#endif
+
+#ifndef ICMP_TIME_EXCEEDED
+#define ICMP_TIME_EXCEEDED 11
+#endif
+
+#ifndef ICMP_DEST_UNREACH
+#define ICMP_DEST_UNREACH 3
+#endif
+
 #define SAFE_PREFIX_REL ATLAS_DATA_NEW_REL
 
 #ifndef STANDALONE_BUSYBOX
