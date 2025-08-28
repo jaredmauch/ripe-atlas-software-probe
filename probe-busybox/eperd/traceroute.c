@@ -15,6 +15,7 @@
 #include <netinet/icmp6.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
+#include <arpa/inet.h>
 
 /* Platform-specific includes */
 #ifdef __FreeBSD__

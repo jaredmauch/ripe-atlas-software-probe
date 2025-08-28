@@ -199,136 +199,89 @@ AC_CANONICAL_HOST
 AC_PROG_CC
 AC_PROG_CC_C_O
 
-# Detect if we're on macOS/Darwin
+# Basic platform detection
 AM_CONDITIONAL([DARWIN], [test "$host_os" = "darwin"])
 AM_CONDITIONAL([MACOS], [test "$host_os" = "darwin"])
 
-# More robust macOS detection
-AS_IF([test "$host_os" = "darwin" -o "$host_os" = "darwin*" -o "$host_vendor" = "apple"], [
-    IS_MACOS=yes
-], [
-    IS_MACOS=no
-])
-
-# Enhanced compiler detection and handling
+# Simple compiler detection
 AC_MSG_CHECKING([for C compiler type])
-AS_IF([test "$IS_MACOS" = "yes"], [
-    # On macOS, prefer clang and handle gcc->clang wrapper
-    AC_MSG_RESULT([macOS detected])
-    
-    # Check if CC is actually clang (even if named gcc)
-    AC_MSG_CHECKING([if compiler is actually clang])
-    if $CC --version 2>/dev/null | grep -q "clang"; then
-        AC_MSG_RESULT([yes - clang detected])
-        IS_CLANG=yes
-        # Set clang-specific flags
-        CFLAGS="$CFLAGS -D_DARWIN_C_SOURCE=1"
-        CFLAGS="$CFLAGS -Wno-ignored-optimization-argument -Wno-unused-command-line-argument"
-        CFLAGS="$CFLAGS -Wno-deprecated-declarations"
-    else
-        AC_MSG_RESULT([no - forcing clang])
-        CC=clang
-        AC_SUBST([CC])
-        IS_CLANG=yes
-        CFLAGS="$CFLAGS -D_DARWIN_C_SOURCE=1"
-        CFLAGS="$CFLAGS -Wno-ignored-optimization-argument -Wno-unused-command-line-argument"
-        CFLAGS="$CFLAGS -Wno-deprecated-declarations"
-    fi
-], [
-    # On other systems, detect compiler type
-    AC_MSG_RESULT([non-macOS system])
-    if $CC --version 2>/dev/null | grep -q "clang"; then
-        AC_MSG_RESULT([clang detected])
-        IS_CLANG=yes
-    elif $CC --version 2>/dev/null | grep -q "gcc"; then
-        AC_MSG_RESULT([gcc detected])
-        IS_CLANG=no
-    else
-        AC_MSG_RESULT([unknown compiler])
-        IS_CLANG=unknown
-    fi
-])
+if $CC --version 2>/dev/null | grep -q "clang"; then
+    AC_MSG_RESULT([clang])
+    IS_CLANG=yes
+else
+    AC_MSG_RESULT([gcc])
+    IS_CLANG=no
+fi
 
-# Set compiler-specific flags
-AS_IF([test "$IS_CLANG" = "yes"], [
-    AC_MSG_NOTICE([Using clang-specific compilation flags])
-    # clang-specific optimizations and warnings
-    CFLAGS="$CFLAGS -fcolor-diagnostics"
-], [
-    AS_IF([test "$IS_CLANG" = "no"], [
-        AC_MSG_NOTICE([Using gcc-specific compilation flags])
-        # gcc-specific optimizations and warnings
-        CFLAGS="$CFLAGS -fdiagnostics-color=auto"
-    ])
-])
-
-AC_SUBST([CFLAGS])
 AC_SUBST([IS_CLANG])
 AM_CONDITIONAL([IS_CLANG], [test "$IS_CLANG" = "yes"])
 AM_CONDITIONAL([IS_GCC], [test "$IS_CLANG" = "no"])
 
-# Check for networking functions that might be missing on macOS
+# Check for basic function availability
 AC_CHECK_FUNCS([inet_ntoa inet_aton inet_pton inet_ntop])
 AC_CHECK_FUNCS([setresgid setresuid])
 AC_CHECK_FUNCS([__bswap32 __bswap64 bswap_32 bswap_64])
+AC_CHECK_FUNCS([strlcat strlcpy])
+AC_CHECK_FUNCS([sendfile])
+AC_CHECK_FUNCS([statfs])
 
-# Check for missing headers
+# Check for header availability
 AC_CHECK_HEADERS([sys/sendfile.h])
 AC_CHECK_HEADERS([linux/reboot.h])
+AC_CHECK_HEADERS([linux/types.h])
+AC_CHECK_HEADERS([sys/reboot.h])
+AC_CHECK_HEADERS([sys/vfs.h])
+AC_CHECK_HEADERS([sys/mount.h])
+AC_CHECK_HEADERS([openssl/ssl.h])
 
-# Check for IPv6 constants
-AC_CHECK_DECLS([IPV6_DSTOPTS, IPV6_HOPOPTS, IPV6_PKTINFO, IPV6_HOPLIMIT])
-AC_CHECK_DECLS([IPV6_RECVPKTINFO, IPV6_RECVHOPLIMIT])
-AC_CHECK_DECLS([RTF_REINSTATE, RTF_DEFAULT, RTF_ADDRCONF, RTF_CACHE, RTF_NONEXTHOP])
+# Check for OpenSSL availability
+AC_CHECK_LIB([ssl], [SSL_new], [HAVE_OPENSSL=yes], [HAVE_OPENSSL=no])
+AM_CONDITIONAL([HAVE_OPENSSL], [test "$HAVE_OPENSSL" = "yes"])
 
 # Check for required libraries
 AC_CHECK_LIB([c], [main])
 AC_CHECK_LIB([m], [main])
 
-# Check for OpenSSL (optional)
-AC_CHECK_LIB([ssl], [SSL_new], [HAVE_OPENSSL=yes], [HAVE_OPENSSL=no])
-AM_CONDITIONAL([HAVE_OPENSSL], [test "$HAVE_OPENSSL" = "yes"])
 
-# Compiler-specific feature detection
-AS_IF([test "$IS_CLANG" = "yes"], [
-    # clang-specific checks
-    AC_MSG_NOTICE([Performing clang-specific feature checks])
-    
-    # Check clang version
-    AC_MSG_CHECKING([clang version])
-    CLANG_VERSION=`$CC --version | head -1 | sed 's/.*clang version \([0-9.]*\).*/\1/'`
-    AC_MSG_RESULT([$CLANG_VERSION])
-    AC_SUBST([CLANG_VERSION])
-    
-    # Check for clang-specific features
-    AC_CHECK_DECLS([__has_feature])
-    AC_CHECK_DECLS([__has_extension])
-    
-    # Set clang-specific preprocessor definitions
-    CFLAGS="$CFLAGS -D__CLANG__"
-    
-], [
-    AS_IF([test "$IS_CLANG" = "no"], [
-        # gcc-specific checks
-        AC_MSG_NOTICE([Performing gcc-specific feature checks])
-        
-        # Check gcc version
-        AC_MSG_CHECKING([gcc version])
-        GCC_VERSION=`$CC --version | head -1 | sed 's/.*gcc.*version \([0-9.]*\).*/\1/'`
-        AC_MSG_RESULT([$GCC_VERSION])
-        AC_SUBST([GCC_VERSION])
-        
-        # Check for gcc-specific features
-        AC_CHECK_DECLS([__builtin_expect])
-        AC_CHECK_DECLS([__builtin_unreachable])
-        
-        # Set gcc-specific preprocessor definitions
-        CFLAGS="$CFLAGS -D__GCC__"
-    ])
+
+# Add autoconf defines to CFLAGS
+AS_IF([test "$ac_cv_func_statfs" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_STATFS=1"
+])
+
+AS_IF([test "$ac_cv_header_sys_mount_h" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_SYS_MOUNT_H=1"
+])
+
+AS_IF([test "$ac_cv_header_sys_vfs_h" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_SYS_VFS_H=1"
+])
+
+AS_IF([test "$ac_cv_header_linux_reboot_h" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_LINUX_REBOOT_H=1"
+])
+
+AS_IF([test "$ac_cv_header_linux_types_h" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_LINUX_TYPES_H=1"
+])
+
+AS_IF([test "$ac_cv_header_sys_reboot_h" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_SYS_REBOOT_H=1"
+])
+
+AS_IF([test "$ac_cv_header_sys_sendfile_h" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_SYS_SENDFILE_H=1"
+])
+
+AS_IF([test "$ac_cv_header_openssl_ssl_h" = "yes"], [
+    CFLAGS="$CFLAGS -DHAVE_OPENSSL_SSL_H=1"
 ])
 
 # Final CFLAGS substitution
 AC_SUBST([CFLAGS])
+
+# Generate config.h header for conditional compilation
+AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([
 Makefile

@@ -4,6 +4,7 @@
  */
 
 #include "libbb.h"
+#include <arpa/inet.h>
 
 int bind_interface(int socket, int af, char *name)
 {

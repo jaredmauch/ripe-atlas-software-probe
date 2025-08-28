@@ -25,9 +25,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __FreeBSD__
+#include "../../config.h"
+#ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
-#else
+#elif defined(HAVE_SYS_VFS_H)
 #include <sys/vfs.h>
 #endif
 

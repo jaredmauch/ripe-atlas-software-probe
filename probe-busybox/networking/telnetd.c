@@ -134,10 +134,11 @@
 #ifdef ATLAS
 #include <string.h>
 #include <unistd.h>
-#ifdef __FreeBSD__
-#include <sys/reboot.h>
-#else
+#include "../config.h"
+#ifdef HAVE_LINUX_REBOOT_H
 #include <linux/reboot.h>
+#elif defined(HAVE_SYS_REBOOT_H)
+#include <sys/reboot.h>
 #endif
 
 #define LOGIN_PREFIX	"Atlas probe, see http://atlas.ripe.net/\r\n\r\n"

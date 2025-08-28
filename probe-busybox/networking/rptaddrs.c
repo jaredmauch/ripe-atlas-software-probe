@@ -23,6 +23,7 @@
 #include <string.h>
 #include <net/route.h>
 #include <net/if.h>
+#include <arpa/inet.h>
 #include "../eperd/eperd.h"
 #include "../eperd/readresolv.h"
 
