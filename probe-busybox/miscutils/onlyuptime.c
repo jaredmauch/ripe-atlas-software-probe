@@ -26,7 +26,7 @@
 /* This is a NOFORK applet. Be very careful! */
 
 int onlyuptime_main(int argc, char **argv) MAIN_EXTERNALLY_VISIBLE;
-int onlyuptime_main(int argc UNUSED_PARAM, char **argv)
+int onlyuptime_main(int argc UNUSED_PARAM, char **argv UNUSED_PARAM)
 {
 	time_t uptime = 0;
 	

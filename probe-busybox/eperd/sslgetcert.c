@@ -1685,11 +1685,10 @@ static void err_reading(struct state *state)
 	}
 }
 
-static void dnscount(struct tu_env *env, int count)
+static void dnscount(struct tu_env *env, int count UNUSED_PARAM)
 {
-	struct state *state;
-
-	state= ENV2STATE(env);
+	/* Function called when DNS resolution completes */
+	/* Currently not implemented */
 }
 
 static void beforeconnect(struct tu_env *env,

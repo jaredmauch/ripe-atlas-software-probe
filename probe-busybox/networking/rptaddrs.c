@@ -30,6 +30,7 @@
 #include "atlas_path.h"
 
 #include <inet_common.h>
+#include "portable_networking.h"
 
 #define IPV4_ROUTE_FILE	"/proc/net/route"
 #define IF_INET6_FILE	"/proc/net/if_inet6"
@@ -869,10 +870,11 @@ static int get_portable_interfaces(portable_if_info_t **interfaces, size_t *coun
 		return -1;
 	}
 	
+	portable_if_info_t *info;
 	for (ifa = ifaddr; ifa != NULL && current_count < max_count; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL) continue;
 		
-		portable_if_info_t *info = &(*interfaces)[current_count];
+		info = &(*interfaces)[current_count];
 		memset(info, 0, sizeof(portable_if_info_t));
 		
 		strncpy(info->name, ifa->ifa_name, IF_NAMESIZE - 1);

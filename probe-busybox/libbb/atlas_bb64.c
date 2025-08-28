@@ -6,6 +6,12 @@
 #include "libbb.h"
 #define BUF_CHUNK       256
 
+/* Function prototypes */
+void buf_init(struct buf *buf, int fd);
+int buf_add(struct buf *buf, const void *data, size_t len);
+int buf_add_b64(struct buf *buf, void *data, size_t len, int mime_nl);
+void buf_cleanup(struct buf *buf);
+
 struct buf
 {
 	size_t offset;
@@ -114,7 +120,9 @@ int buf_add_b64(struct buf *buf, void *data, size_t len, int mime_nl)
 			break;
 		default:
 			fprintf(stderr, "bad state in buf_add_b64");
+			return -1;
 	}
+	return 0;
 }
 
 void buf_cleanup(struct buf *buf)

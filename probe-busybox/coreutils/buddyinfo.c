@@ -42,6 +42,7 @@ int buddyinfo_main(int argc UNUSED_PARAM, char **argv)
 	int need_reboot = 0; // don't reboot 
 	int freeMem = 0;
 	time_t uptime = 0;
+	struct timespec ts;
 
 	lowmemChar = argv[1];
 
@@ -65,7 +66,6 @@ int buddyinfo_main(int argc UNUSED_PARAM, char **argv)
 
 	/* get uptime and print it */
 	// Portable way to get uptime using clock_gettime
-	struct timespec ts;
 	if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
 		uptime = ts.tv_sec;
 	} else {
@@ -77,15 +77,18 @@ int buddyinfo_main(int argc UNUSED_PARAM, char **argv)
 	// Portable memory information
 	printf(", " DBQ(buddyinfo) ": [ ");
 	
+	// Variables for memory processing
+	FILE *fp;
+	char aa[10];
+	int i = 0;
+	int j = 0;
+	int memBlock = 4;
+	int jMax = 64; // enough
+	
 #ifdef __linux__
 	// Linux: try /proc/buddyinfo first
-	FILE *fp = fopen("/proc/buddyinfo", "r");
+	fp = fopen("/proc/buddyinfo", "r");
 	if (fp) {
-		char aa[10];
-		int i = 0;
-		int j = 0;
-		int memBlock = 4;
-		int jMax = 64; // enough
 		
 		fscanf(fp, "%s", aa); 
 		fscanf(fp, "%s", aa);

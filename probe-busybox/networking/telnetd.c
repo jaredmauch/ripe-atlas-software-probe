@@ -950,7 +950,6 @@ int telnetd_main(int argc UNUSED_PARAM, char **argv)
 	{
 		struct timeval *tv_ptr = NULL;
 #if ENABLE_FEATURE_TELNETD_INETD_WAIT
-		struct timeval tv;
 		if ((opt & OPT_WAIT) && !G.sessions) {
 			tv.tv_sec = sec_linger;
 			tv.tv_usec = 0;

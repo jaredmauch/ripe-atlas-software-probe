@@ -27,6 +27,7 @@ table if it has changed.
 #include <string.h>
 
 #include "libbb.h"
+#include "portable_networking.h"
 
 #define NEW_FORMAT
 

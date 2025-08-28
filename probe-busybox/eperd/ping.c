@@ -1461,7 +1461,7 @@ err:
 
 static void ping_start2(void *state)
 {
-	int p_proto, on, fd;
+	int p_proto, on;
 	struct pingstate *pingstate;
 	char line[80];
 
@@ -1483,6 +1483,7 @@ static void ping_start2(void *state)
 
 		if (!pingstate->response_in)
 		{
+			int fd;
 			if ((fd = socket(AF_INET, SOCK_RAW, p_proto)) == -1) {
 				/* Create an endpoint for communication
 				 * using raw socket for ICMP calls */
@@ -1513,6 +1514,7 @@ static void ping_start2(void *state)
 
 		if (!pingstate->response_in)
 		{
+			int fd;
 			if ((fd = socket(AF_INET6, SOCK_RAW, p_proto)) == -1) {
 				snprintf(line, sizeof(line),
 					"{ " DBQ(error) ":"
@@ -1526,15 +1528,14 @@ static void ping_start2(void *state)
 			}
 			pingstate->socket= fd;
 
+			on = 1;
+			setsockopt(fd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on,
+				sizeof(on));
+
+			on = 1;
+			setsockopt(fd, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &on,
+				sizeof(on));
 		}
-
-		on = 1;
-		setsockopt(fd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on,
-			sizeof(on));
-
-		on = 1;
-		setsockopt(fd, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &on,
-			sizeof(on));
 
 		if (!pingstate->response_in)
 		{

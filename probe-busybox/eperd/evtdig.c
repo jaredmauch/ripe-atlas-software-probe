@@ -3247,7 +3247,7 @@ void tdig_start (void *arg)
 
 		if (qry->response_in)
 		{
-			size_t len;
+			size_t resp_len;
 
 			qry->resp_file= fopen(qry->response_in, "r");
 			if (!qry->resp_file)
@@ -3256,11 +3256,11 @@ void tdig_start (void *arg)
 					qry->response_in);
 			}
 
-			len= sizeof(sin6);
+			resp_len= sizeof(sin6);
 			read_response_file(qry->resp_file, RESP_PEERNAME,
-				&len, &sin6);
+				&resp_len, &sin6);
 			tcp_beforeconnect(&qry->tu_env,
-				(struct sockaddr *)&sin6, len);
+				(struct sockaddr *)&sin6, resp_len);
 			tcp_connected(&qry->tu_env, NULL);
 			tcp_writecb(NULL, &qry->tu_env);
 			while(qry->resp_file != NULL)
@@ -4073,7 +4073,7 @@ unsigned char* ReadName(unsigned char *base, size_t size, size_t offset,
 			if ((len & 0xc0) != 0xc0)
 			{
 				/* Bad format */
-				snprintf((char *)name, sizeof(name),
+				snprintf((char *)name, 256,
 					"format-error at %lu: value 0x%x",
 					(unsigned long)offset, len);
 				*count= -1;
@@ -4084,7 +4084,7 @@ unsigned char* ReadName(unsigned char *base, size_t size, size_t offset,
 			noffset= ((len & ~0xc0) << 8) | base[offset+1];
 			if (noffset >= size)
 			{
-				snprintf((char *)name, sizeof(name),
+				snprintf((char *)name, 256,
 					"offset-error at %lu: offset %lu",
 					(unsigned long)offset, (unsigned long)noffset);
 				*count= -1;
@@ -4095,7 +4095,7 @@ unsigned char* ReadName(unsigned char *base, size_t size, size_t offset,
 			if (jump_count > 256)
 			{
 				/* Too many */
-				snprintf((char *)name, sizeof(name),
+				snprintf((char *)name, 256,
 					"too many redirects at %lu",
 						(unsigned long)offset);
 				*count= -1;
@@ -4117,7 +4117,7 @@ unsigned char* ReadName(unsigned char *base, size_t size, size_t offset,
 		}
 		if (offset+len+1 > size)
 		{
-			snprintf((char *)name, sizeof(name),
+			snprintf((char *)name, 256,
 				"buf-bounds-error at %lu: len %d",
 					(unsigned long)offset, len);
 			*count= -1;
@@ -4127,7 +4127,7 @@ unsigned char* ReadName(unsigned char *base, size_t size, size_t offset,
 
 		if (p+len+1 > 255)
 		{
-			snprintf((char *)name, sizeof(name),
+			snprintf((char *)name, 256,
 					"name-length-error at %lu: len %d",
 					(unsigned long)offset, p+len+1);
 			*count= -1;
