@@ -906,7 +906,7 @@ static void ready_callback4 (int __attribute((unused)) unused,
 
 	/* Check the ICMP header to drop unexpected packets due to unrecognized id */
 #ifdef __FreeBSD__
-	if (icmp->icmp_hun.ih_idseq.icd_id != (base->pid & 0x0fff))
+	if (icmp->icmp_id != (base->pid & 0x0fff))
 #else
 	if (icmp->un.echo.id != (base->pid & 0x0fff))
 #endif
@@ -914,7 +914,7 @@ static void ready_callback4 (int __attribute((unused)) unused,
 #if 0
 #ifdef __FreeBSD__
 		printf("ready_callback4: bad pid: got %d, expect %d\n",
-			icmp->icmp_hun.ih_idseq.icd_id, base->pid & 0x0fff);
+			icmp->icmp_id, base->pid & 0x0fff);
 #else
 		printf("ready_callback4: bad pid: got %d, expect %d\n",
 			icmp->un.echo.id, base->pid & 0x0fff);
@@ -984,7 +984,7 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	     * care?
 	     */
 #ifdef __FreeBSD__
-	    isDup= (ntohs(icmp->icmp_hun.ih_idseq.icd_seq) != state->seq);
+	    isDup= (ntohs(icmp->icmp_seq) != state->seq);
 #else
 	    isDup= (ntohs(icmp->un.echo.sequence) != state->seq);
 #endif
@@ -993,7 +993,7 @@ static void ready_callback4 (int __attribute((unused)) unused,
 		    (struct sockaddr *)&state->sin6, state->socklen,
 		    (struct sockaddr *)&loc_sin4, sizeof(loc_sin4),
 #ifdef __FreeBSD__
-		    ntohs(icmp->icmp_hun.ih_idseq.icd_seq), ip->ip_ttl, &elapsed,
+		    ntohs(icmp->icmp_seq), ip->ip_ttl, &elapsed,
 #else
 		    ntohs(icmp->un.echo.sequence), ip->ip_ttl, &elapsed,
 #endif
