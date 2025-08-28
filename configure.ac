@@ -21,7 +21,7 @@ AC_SUBST(probe_type)
 
 AS_CASE([$probe_type],
 	[*openwrt*], [probe_scripts_path=$probe_type],
-	[freebsd], [probe_scripts_path=freebsd],
+	[freebsd*], [probe_scripts_path=freebsd],
 	[probe_scripts_path=generic])
 AC_SUBST(probe_scripts_path)
 AM_CONDITIONAL([PROBE_TYPE_V3], [test "x${probe_type}" = 'xopenwrt-atlas-probev3'])
