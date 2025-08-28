@@ -858,6 +858,7 @@ static int get_portable_interfaces(portable_if_info_t **interfaces, size_t *coun
 	struct ifaddrs *ifaddr, *ifa;
 	size_t max_count = 64; // Reasonable limit
 	size_t current_count = 0;
+	portable_if_info_t *info;
 	
 	*interfaces = malloc(max_count * sizeof(portable_if_info_t));
 	if (!*interfaces) {
@@ -870,7 +871,6 @@ static int get_portable_interfaces(portable_if_info_t **interfaces, size_t *coun
 		return -1;
 	}
 	
-	portable_if_info_t *info;
 	for (ifa = ifaddr; ifa != NULL && current_count < max_count; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL) continue;
 		

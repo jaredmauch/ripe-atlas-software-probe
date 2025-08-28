@@ -78,7 +78,7 @@ int buddyinfo_main(int argc UNUSED_PARAM, char **argv)
 	printf(", " DBQ(buddyinfo) ": [ ");
 	
 	// Variables for memory processing
-	FILE *fp;
+	FILE *fp = NULL;
 	char aa[10];
 	int i = 0;
 	int j = 0;
