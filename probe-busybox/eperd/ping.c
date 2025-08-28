@@ -912,8 +912,13 @@ static void ready_callback4 (int __attribute((unused)) unused,
 #endif
 	  {
 #if 0
+#ifdef __FreeBSD__
+		printf("ready_callback4: bad pid: got %d, expect %d\n",
+			icmp->icmp_id, base->pid & 0x0fff);
+#else
 		printf("ready_callback4: bad pid: got %d, expect %d\n",
 			icmp->un.echo.id, base->pid & 0x0fff);
+#endif
 #endif
 	    goto done;
 	  }

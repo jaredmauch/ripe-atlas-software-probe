@@ -127,7 +127,7 @@ static void do_resolv(char *str_resolv, char *str_resolv_new,
 				}
 				inet_ntop(AF_INET6, ((char *)oh)+i,
 					namebuf, sizeof(namebuf));
-				if (IN6_IS_ADDR_LINKLOCAL(((char *)oh)+i)
+				if (IN6_IS_ADDR_LINKLOCAL((struct in6_addr *)((char *)oh)+i)
 					&& interface_name != NULL)
 				{
 					strlcat(namebuf, "%",
