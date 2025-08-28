@@ -20,7 +20,6 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>
-#include "portable_icmp.h"
 
 #include "eperd.h"
 #include "atlas_path.h"
@@ -906,7 +905,11 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	icmp = (struct icmphdr *) (base->packet + hlen);
 
 	/* Check the ICMP header to drop unexpected packets due to unrecognized id */
+#ifdef __FreeBSD__
+	if (icmp->icmp_id != (base->pid & 0x0fff))
+#else
 	if (icmp->un.echo.id != (base->pid & 0x0fff))
+#endif
 	  {
 #if 0
 		printf("ready_callback4: bad pid: got %d, expect %d\n",
@@ -938,11 +941,19 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	}
 
 	/* Check for Destination Host Unreachable */
+#ifdef __FreeBSD__
+	if (icmp->icmp_type == ICMP_ECHO)
+#else
 	if (icmp->type == ICMP_ECHO)
+#endif
 	{
 		/* Completely ignore ECHO requests */
 	}
+#ifdef __FreeBSD__
+	else if (icmp->icmp_type == ICMP_ECHOREPLY)
+#else
 	else if (icmp->type == ICMP_ECHOREPLY)
+#endif
 	  {
 	    /* Use the User Data to relate Echo Request/Reply and evaluate the Round Trip Time */
 	    struct timespec elapsed;             /* response time */
@@ -967,12 +978,20 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	     * This is not quite right, it could be a late packet. Do we
 	     * care?
 	     */
+#ifdef __FreeBSD__
+	    isDup= (ntohs(icmp->icmp_sequence) != state->seq);
+#else
 	    isDup= (ntohs(icmp->un.echo.sequence) != state->seq);
+#endif
 	    ping_cb(isDup ? PING_ERR_DUP : PING_ERR_NONE,
 		    nrecv - IPHDR - ICMP_MINLEN, nrecv,
 		    (struct sockaddr *)&state->sin6, state->socklen,
 		    (struct sockaddr *)&loc_sin4, sizeof(loc_sin4),
+#ifdef __FreeBSD__
+		    ntohs(icmp->icmp_sequence), ip->ip_ttl, &elapsed,
+#else
 		    ntohs(icmp->un.echo.sequence), ip->ip_ttl, &elapsed,
+#endif
 		    state);
 
             if (!isDup)
