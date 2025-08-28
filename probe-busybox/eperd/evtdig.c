@@ -1234,7 +1234,7 @@ static int mk_dns_buff(struct query_state *qry,  u_char *packet,
 /* Attempt to transmit a UDP DNS Request to a server. TCP is else where */
 static void tdig_send_query_callback(int unused UNUSED_PARAM, const short event UNUSED_PARAM, void *h)
 {
-	int r, fd, on;
+	int r, fd = -1, on;
 	sa_family_t af;
 	struct query_state *qry = h;
 	struct tdig_base *base = qry->base;

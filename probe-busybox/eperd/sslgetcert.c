@@ -752,7 +752,16 @@ static void timeout_callback(int __attribute((unused)) unused,
 	getnameinfo((struct sockaddr *)&state->loc_sin6,
 		state->loc_socklen, hostbuf, sizeof(hostbuf), NULL, 0,
 		NI_NUMERICHOST);
-	snprintf(line, sizeof(line), DBQ(src_addr) ":" DBQ(%s) ", " , hostbuf);
+	/* Ensure we don't overflow the line buffer */
+	if (strlen(hostbuf) + 50 < sizeof(line)) {
+		snprintf(line, sizeof(line), DBQ(src_addr) ":" DBQ(%s) ", " , hostbuf);
+	} else {
+		/* Truncate the address if it's too long */
+		char truncated[sizeof(line) - 50];
+		strncpy(truncated, hostbuf, sizeof(truncated) - 1);
+		truncated[sizeof(truncated) - 1] = '\0';
+		snprintf(line, sizeof(line), DBQ(src_addr) ":" DBQ(%s) ", " , truncated);
+	}
 	add_str(state, line);
 
 	resptime= (state->t_connect.tv_sec- state->start.tv_sec)*1e3 +
@@ -1685,7 +1694,7 @@ static void err_reading(struct state *state)
 	}
 }
 
-static void dnscount(struct tu_env *env, int count UNUSED_PARAM)
+static void dnscount(struct tu_env *env UNUSED_PARAM, int count UNUSED_PARAM)
 {
 	/* Function called when DNS resolution completes */
 	/* Currently not implemented */

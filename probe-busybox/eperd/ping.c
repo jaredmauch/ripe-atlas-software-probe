@@ -426,8 +426,18 @@ static void ping_cb(int result, int bytes, int psize,
 
 			printf("loc_sa: %s\n", namebuf2);
 
-			snprintf(line, sizeof(line),
-				", " DBQ(src_addr) ":" DBQ(%s), namebuf2);
+			/* Ensure we don't overflow the line buffer */
+			if (strlen(namebuf2) + 50 < sizeof(line)) {
+				snprintf(line, sizeof(line),
+					", " DBQ(src_addr) ":" DBQ(%s), namebuf2);
+			} else {
+				/* Truncate the address if it's too long */
+				char truncated[sizeof(line) - 50];
+				strncpy(truncated, namebuf2, sizeof(truncated) - 1);
+				truncated[sizeof(truncated) - 1] = '\0';
+				snprintf(line, sizeof(line),
+					", " DBQ(src_addr) ":" DBQ(%s), truncated);
+			}
 			add_str(pingstate, line);
 		}
 
