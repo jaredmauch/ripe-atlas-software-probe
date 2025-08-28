@@ -839,7 +839,11 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	struct sockaddr_in *sin4p;
 	struct sockaddr_in loc_sin4;
 	struct ip * ip;
+#ifdef __FreeBSD__
+	struct icmp * icmp;
+#else
 	struct icmphdr * icmp;
+#endif
 	struct evdata * data;
 	int hlen = 0;
 	struct timespec now;
@@ -902,7 +906,11 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	  }
 
 	/* The ICMP portion */
+#ifdef __FreeBSD__
+	icmp = (struct icmp *) (base->packet + hlen);
+#else
 	icmp = (struct icmphdr *) (base->packet + hlen);
+#endif
 
 	/* Check the ICMP header to drop unexpected packets due to unrecognized id */
 #ifdef __FreeBSD__

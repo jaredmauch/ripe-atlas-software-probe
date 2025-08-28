@@ -79,11 +79,7 @@ int buddyinfo_main(int argc UNUSED_PARAM, char **argv)
 	
 	// Variables for memory processing
 	FILE *fp = NULL;
-	char aa[10];
-	int i = 0;
-	int j = 0;
-	int memBlock = 4;
-	int jMax = 64; // enough
+	/* Note: aa, i, j, memBlock, jMax are not used in this build */
 	
 #ifdef __linux__
 	// Linux: try /proc/buddyinfo first
