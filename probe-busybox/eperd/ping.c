@@ -20,6 +20,7 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>
+#include "portable_icmp.h"
 
 #include "eperd.h"
 #include "atlas_path.h"
