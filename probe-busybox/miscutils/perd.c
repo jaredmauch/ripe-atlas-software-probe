@@ -1223,10 +1223,9 @@ error:
 	return 1;
 }
 
-static void RunJob(const char *user, CronLine *line)
+static void RunJob(const char *user UNUSED_PARAM, CronLine *line)
 {
-	struct passwd *pas;
-	pid_t pid;
+	/* Note: user parameter and external command execution are disabled for security */
 
 	if (line->lasttime != 0)
 	{

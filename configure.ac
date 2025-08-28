@@ -1,5 +1,5 @@
-AC_PREREQ([2.68])
-AC_INIT([ripe-atlas], [m4_esyscmd_s([cat VERSION])], [mstam@ripe.net])
+AC_PREREQ([2.72])
+AC_INIT([ripe-atlas],[m4_esyscmd_s([cat VERSION])],[mstam@ripe.net])
 
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
@@ -93,7 +93,7 @@ if test "x${with_shell_fixup}" != 'x'; then
 fi
 
 AC_PATH_PROG(SETCAP, setcap)
-AC_ARG_ENABLE([setcap-install], [AC_HELP_STRING([--enable-setcap-install], [install measurements with cap_net_raw @<:@default=yes@:>@])], [enable_setcap_install="${enableval}"],[enable_setcap_install=yes])
+AC_ARG_ENABLE([setcap-install], [AS_HELP_STRING([--enable-setcap-install],[install measurements with cap_net_raw @<:@default=yes@:>@])], [enable_setcap_install="${enableval}"],[enable_setcap_install=yes])
 
 AC_MSG_CHECKING([whether to install measurements with cap_net_raw capabilities])
 if test "x${enable_setcap_install}" = 'xno'; then
@@ -110,7 +110,7 @@ fi
 AM_CONDITIONAL(SETCAP_INSTALL, [test "x${enable_setcap_install}" = 'xyes'])
 
 AC_PATH_PROG(SYSTEMDPATH, systemd-path)
-AC_ARG_ENABLE([systemd], [AC_HELP_STRING([--enable-systemd], [install files for systemd @<:@default=yes@:>@])], [enable_systemd="${enableval}"],[enable_systemd=yes])
+AC_ARG_ENABLE([systemd], [AS_HELP_STRING([--enable-systemd],[install files for systemd @<:@default=yes@:>@])], [enable_systemd="${enableval}"],[enable_systemd=yes])
 
 AC_MSG_CHECKING([whether to install systemd support files])
 systemd_tmpfilesdir=
@@ -171,7 +171,7 @@ AC_SUBST(atlas_scriptsdir)
 AC_SUBST(atlas_sysconfdir)
 AC_SUBST(atlas_spooldir)
 
-AC_PROG_LIBTOOL
+LT_INIT
 AC_PROG_CC
 
 AC_CONFIG_FILES([
