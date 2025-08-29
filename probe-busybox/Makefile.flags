@@ -54,6 +54,10 @@ CFLAGS += $(call cc-option,-fno-builtin-strlen -fomit-frame-pointer -ffunction-s
 CFLAGS += $(call cc-option,-fno-guess-branch-probability,)
 CFLAGS += $(call cc-option,-funsigned-char,)
 CFLAGS += $(call cc-option,-falign-functions=1,)
+
+# Add OpenSSL paths for macOS
+CPPFLAGS += -I/opt/homebrew/opt/openssl@3/include
+LDFLAGS += -L/opt/homebrew/opt/openssl@3/lib
 else
 # Original flags for other platforms
 CFLAGS += $(call cc-option,-fno-builtin-strlen -finline-limit=0 -fomit-frame-pointer -ffunction-sections -fdata-sections,)
