@@ -856,7 +856,7 @@ int telnetd_main(int argc UNUSED_PARAM, char **argv)
 		}
 
 		if (write_pidfile(PidFileName) < 0) {
-			syslog(LOG_ERR, "unable to open '%s': %m", PidFileName);
+			syslog(LOG_ERR, "unable to open '%s': %s", PidFileName, strerror(errno));
 			return 1;
 		}
 	}
@@ -1354,7 +1354,7 @@ static int equal_sessionid(char *passwd)
 	file= fopen(fn, "r");
 	if (file == NULL)
 	{
-		syslog(LOG_ERR, "unable to open '%s': %m", fn);
+		syslog(LOG_ERR, "unable to open '%s': %s", fn, strerror(errno));
 		free(fn); fn= NULL;
 		return 0;
 	}
@@ -1362,7 +1362,7 @@ static int equal_sessionid(char *passwd)
 	fgets(line, sizeof(line), file);	/* Skip first empty line */
 	if (fgets(line, sizeof(line), file) == NULL)
 	{
-		syslog(LOG_ERR, "unable to read from '%s': %m", fn);
+		syslog(LOG_ERR, "unable to read from '%s': %s", fn, strerror(errno));
 		fclose(file);
 		free(fn); fn= NULL;
 		return 0;

@@ -302,7 +302,7 @@ static int setup_ipv4_rpt(FILE *of)
 
 	while (fgets(line, sizeof(line), in_file) != NULL)
 	{
-		sscanf(line, "%16s %x %x %x %d %d %d %x",
+		sscanf(line, "%16s %x %x %x %u %u %u %x",
 			infname, &dest, &gateway, &flags, &refcnt, &use, 
 			&metric, &mask);
 		in_addr.s_addr= dest;
@@ -389,8 +389,8 @@ static int setup_ipv6_rpt(FILE *of, char *filename)
 	char nh6p[8][5];
 	char iface[16], flags[16];
 	char Scope[32];
-	int scope, dad_status, if_idx;
-	int iflags, metric, refcnt, use, prefix_len, slen;
+	unsigned int scope, dad_status, if_idx;
+	unsigned int iflags, metric, refcnt, use, prefix_len, slen;
 	struct sockaddr_in6 sdst6, snh6;
 	char buf2[1024];
 

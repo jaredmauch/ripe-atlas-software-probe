@@ -356,7 +356,7 @@ static int buf_write(struct buf *buf)
 			continue;
 		}
 		fprintf(stderr, "write to %p failed: %s\n",
-			buf->bev, r == 0 ? "eof" : strerror(errno));
+			(void *)buf->bev, r == 0 ? "eof" : strerror(errno));
 		return -1;
 	}
 	return 0;
