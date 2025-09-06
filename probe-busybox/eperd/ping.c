@@ -14,6 +14,9 @@
 
 #include <assert.h>
 #include <netinet/in.h>
+#ifdef __FreeBSD__
+#include <netinet/ip.h>
+#endif
 #include <netinet/ip_icmp.h>
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>
@@ -423,8 +426,16 @@ static void ping_cb(int result, int bytes, int psize,
 
 			printf("loc_sa: %s\n", namebuf2);
 
-			snprintf(line, sizeof(line),
-				", " DBQ(src_addr) ":" DBQ(%s), namebuf2);
+			/* Ensure we don't overflow the line buffer */
+			{
+				/* Truncate the address if it's too long */
+				char truncated[sizeof(line) - 50];
+				size_t max_len = sizeof(truncated) - 1;
+				strncpy(truncated, namebuf2, max_len);
+				truncated[max_len] = '\0';
+				snprintf(line, sizeof(line),
+					", " DBQ(src_addr) ":" DBQ(%s), truncated);
+			}
 			add_str(pingstate, line);
 		}
 
@@ -729,10 +740,16 @@ static void ping_xmit(struct pingstate *host)
 		}
 		else
 		{
+#ifdef __FreeBSD__
+			/* On FreeBSD, if socket is connected, use send() instead of sendto() */
+			nsent = send(host->socket, base->packet,
+				host->cursize+ICMP6_HDRSIZE, MSG_DONTWAIT);
+#else
 			nsent = sendto(host->socket, base->packet,
 				host->cursize+ICMP6_HDRSIZE,
 				MSG_DONTWAIT, (struct sockaddr *)&host->sin6,
 				host->socklen);
+#endif
 		}
 
 	}
@@ -754,10 +771,16 @@ static void ping_xmit(struct pingstate *host)
 		}
 		else
 		{
+#ifdef __FreeBSD__
+			/* On FreeBSD, if socket is connected, use send() instead of sendto() */
+			nsent = send(host->socket, base->packet,
+				host->cursize+ICMP_MINLEN, MSG_DONTWAIT);
+#else
 			nsent = sendto(host->socket, base->packet,
 				host->cursize+ICMP_MINLEN,
 				MSG_DONTWAIT, (struct sockaddr *)&host->sin6,
 				host->socklen);
+#endif
 		}
 	}
 
@@ -836,7 +859,11 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	struct sockaddr_in *sin4p;
 	struct sockaddr_in loc_sin4;
 	struct ip * ip;
+#ifdef __FreeBSD__
+	struct icmp * icmp;
+#else
 	struct icmphdr * icmp;
+#endif
 	struct evdata * data;
 	int hlen = 0;
 	struct timespec now;
@@ -899,14 +926,27 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	  }
 
 	/* The ICMP portion */
+#ifdef __FreeBSD__
+	icmp = (struct icmp *) (base->packet + hlen);
+#else
 	icmp = (struct icmphdr *) (base->packet + hlen);
+#endif
 
 	/* Check the ICMP header to drop unexpected packets due to unrecognized id */
+#ifdef __FreeBSD__
+	if (icmp->icmp_id != (base->pid & 0x0fff))
+#else
 	if (icmp->un.echo.id != (base->pid & 0x0fff))
+#endif
 	  {
 #if 0
+#ifdef __FreeBSD__
+		printf("ready_callback4: bad pid: got %d, expect %d\n",
+			icmp->icmp_id, base->pid & 0x0fff);
+#else
 		printf("ready_callback4: bad pid: got %d, expect %d\n",
 			icmp->un.echo.id, base->pid & 0x0fff);
+#endif
 #endif
 	    goto done;
 	  }
@@ -934,11 +974,19 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	}
 
 	/* Check for Destination Host Unreachable */
+#ifdef __FreeBSD__
+	if (icmp->icmp_type == ICMP_ECHO)
+#else
 	if (icmp->type == ICMP_ECHO)
+#endif
 	{
 		/* Completely ignore ECHO requests */
 	}
+#ifdef __FreeBSD__
+	else if (icmp->icmp_type == ICMP_ECHOREPLY)
+#else
 	else if (icmp->type == ICMP_ECHOREPLY)
+#endif
 	  {
 	    /* Use the User Data to relate Echo Request/Reply and evaluate the Round Trip Time */
 	    struct timespec elapsed;             /* response time */
@@ -963,12 +1011,20 @@ static void ready_callback4 (int __attribute((unused)) unused,
 	     * This is not quite right, it could be a late packet. Do we
 	     * care?
 	     */
+#ifdef __FreeBSD__
+	    isDup= (ntohs(icmp->icmp_seq) != state->seq);
+#else
 	    isDup= (ntohs(icmp->un.echo.sequence) != state->seq);
+#endif
 	    ping_cb(isDup ? PING_ERR_DUP : PING_ERR_NONE,
 		    nrecv - IPHDR - ICMP_MINLEN, nrecv,
 		    (struct sockaddr *)&state->sin6, state->socklen,
 		    (struct sockaddr *)&loc_sin4, sizeof(loc_sin4),
+#ifdef __FreeBSD__
+		    ntohs(icmp->icmp_seq), ip->ip_ttl, &elapsed,
+#else
 		    ntohs(icmp->un.echo.sequence), ip->ip_ttl, &elapsed,
+#endif
 		    state);
 
             if (!isDup)
@@ -1461,7 +1517,7 @@ err:
 
 static void ping_start2(void *state)
 {
-	int p_proto, on, fd;
+	int p_proto, on;
 	struct pingstate *pingstate;
 	char line[80];
 
@@ -1483,6 +1539,7 @@ static void ping_start2(void *state)
 
 		if (!pingstate->response_in)
 		{
+			int fd;
 			if ((fd = socket(AF_INET, SOCK_RAW, p_proto)) == -1) {
 				/* Create an endpoint for communication
 				 * using raw socket for ICMP calls */
@@ -1513,6 +1570,7 @@ static void ping_start2(void *state)
 
 		if (!pingstate->response_in)
 		{
+			int fd;
 			if ((fd = socket(AF_INET6, SOCK_RAW, p_proto)) == -1) {
 				snprintf(line, sizeof(line),
 					"{ " DBQ(error) ":"
@@ -1526,15 +1584,14 @@ static void ping_start2(void *state)
 			}
 			pingstate->socket= fd;
 
+			on = 1;
+			setsockopt(fd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on,
+				sizeof(on));
+
+			on = 1;
+			setsockopt(fd, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &on,
+				sizeof(on));
 		}
-
-		on = 1;
-		setsockopt(fd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on,
-			sizeof(on));
-
-		on = 1;
-		setsockopt(fd, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &on,
-			sizeof(on));
 
 		if (!pingstate->response_in)
 		{

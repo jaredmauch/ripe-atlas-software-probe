@@ -504,10 +504,13 @@ char *xrealloc_getcwd_or_warn(char *cwd) FAST_FUNC;
 
 char *xmalloc_follow_symlinks(const char *path) FAST_FUNC RETURNS_MALLOC;
 
+/* strlcat and strlcpy are already available on macOS/Darwin */
+#if !defined(__APPLE__) && !defined(__DARWIN__)
 extern size_t strlcat(char *__restrict dst, const char *__restrict src,
 	size_t n);
 extern size_t strlcpy(char *__restrict dst, const char *__restrict src,
 	size_t n);
+#endif
 
 enum {
 	/* bb_signals(BB_FATAL_SIGS, handler) catches all signals which
@@ -597,7 +600,7 @@ void xpipe(int filedes[2]) FAST_FUNC;
 /* In this form code with pipes is much more readable */
 struct fd_pair { int rd; int wr; };
 #define piped_pair(pair)  pipe(&((pair).rd))
-#define xpiped_pair(pair) xpipe(&((pair).rd))
+#define xpiped_pair(pair) do { int _pipe[2]; xpipe(_pipe); (pair).rd = _pipe[0]; (pair).wr = _pipe[1]; } while (0)
 
 /* Useful for having small structure members/global variables */
 typedef int8_t socktype_t;

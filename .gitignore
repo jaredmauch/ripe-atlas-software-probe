@@ -7,6 +7,7 @@ config/common/ripe-atlas.user.conf
 config/common/ripe-atlas.users.conf
 config/common/ripe-atlas.service
 bin/arch/generic/*.sh
+bin/arch/freebsd/*.sh
 bin/config.sh
 bin/common-pre.sh
 bin/common.sh

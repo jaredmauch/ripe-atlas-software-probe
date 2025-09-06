@@ -21,6 +21,10 @@
  * Vladimir Oleynik <dzo@simtreas.ru> 2001
  * Set process group corrections, initial busybox port
  */
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 //config:config TELNETD
 //config:	bool "telnetd"
 //config:	default y
@@ -120,7 +124,6 @@
 #include "common_bufsiz.h"
 #include <syslog.h>
 #include <sys/mount.h>
-#include <sys/reboot.h>
 #include "atlas_path.h"
 
 #if DEBUG
@@ -134,7 +137,14 @@
 #ifdef ATLAS
 #include <string.h>
 #include <unistd.h>
+#include "../config.h"
+#include <sys/reboot.h>  /* for reboot() function */
+#ifdef HAVE_LINUX_REBOOT_H
 #include <linux/reboot.h>
+#endif
+#ifdef __FreeBSD__
+#include <sys/mount.h>   /* for MNT_UPDATE */
+#endif
 
 #define LOGIN_PREFIX	"Atlas probe, see http://atlas.ripe.net/\r\n\r\n"
 #define LOGIN_PROMPT	" login: "
@@ -950,7 +960,6 @@ int telnetd_main(int argc UNUSED_PARAM, char **argv)
 	{
 		struct timeval *tv_ptr = NULL;
 #if ENABLE_FEATURE_TELNETD_INETD_WAIT
-		struct timeval tv;
 		if ((opt & OPT_WAIT) && !G.sessions) {
 			tv.tv_sec = sec_linger;
 			tv.tv_usec = 0;
@@ -1179,7 +1188,11 @@ do_cmd:
 			if (strcmp(line, CMD_REBOOT) == 0)
 			{
 				sync();
+#ifdef HAVE_LINUX_REBOOT_H
 				reboot(LINUX_REBOOT_CMD_RESTART);
+#else
+				reboot(RB_AUTOBOOT);
+#endif
 				free(line); line= NULL;
 
 				goto skip3;
@@ -1188,7 +1201,12 @@ do_cmd:
 			{
 				free(line); line= NULL;
 
+#ifdef __FreeBSD__
+				/* FreeBSD mount() signature: mount(type, dir, flags, data) */
+				r= mount("ufs", "/", MNT_UPDATE, NULL);
+#else
 				r= mount(NULL, "/", NULL, MS_REMOUNT, NULL);
+#endif
 				if (r == -1)
 				{
 					add_2sock(ts, BAD_REMOUNT);
@@ -1206,7 +1224,11 @@ do_cmd:
 				fclose(file); file= NULL;
 
 				sync();
+#ifdef HAVE_LINUX_REBOOT_H
 				reboot(LINUX_REBOOT_CMD_RESTART);
+#else
+				reboot(RB_AUTOBOOT);
+#endif
 				goto skip3;
 			}
 			if (strlen(line) == 0)
