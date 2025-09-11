@@ -85,7 +85,7 @@ static int using_json = 0;
 #endif
 
 /* Global variable to track current tool for response type mapping */
-static const char *current_tool = NULL;
+const char *current_tool = NULL;
 static int is_linux_datafile = 0;
 
 /* Set the current tool for response type mapping */

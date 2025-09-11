@@ -185,7 +185,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	fprintf(stderr, "\n");
 	
-	/* Application-specific response type mapping */
+	/* Get current tool from global variable */
 	extern const char *current_tool;
 	int mapped_type = response_type;
 	if (current_tool) {
