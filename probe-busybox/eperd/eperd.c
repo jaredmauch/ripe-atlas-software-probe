@@ -248,8 +248,8 @@ int eperd_main(int argc, char **argv) MAIN_EXTERNALLY_VISIBLE;
 int eperd_main(int argc UNUSED_PARAM, char **argv)
 {
 	unsigned opt;
-	int r, fd;
-	unsigned seed;
+	int r, fd = -1;
+	unsigned seed = 0;
 	size_t len;
 	char *validated_fn;
 	struct event *updateEventMin, *updateEventHour;
