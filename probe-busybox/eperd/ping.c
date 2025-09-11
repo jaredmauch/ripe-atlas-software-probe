@@ -11,6 +11,10 @@
 #include <event2/dns.h>
 #include <event2/event.h>
 #include <event2/event_struct.h>
+#include "portable_json.h"
+#ifdef CONFIG_HAVE_JSON_C
+#include "json_output.h"
+#endif
 
 #include <assert.h>
 #include <netinet/in.h>
@@ -236,6 +240,57 @@ static void add_str(struct pingstate *state, const char *str)
 	//printf("add_str: result = '%s'\n", state->result);
 }
 
+/* Write JSON test data for portable testing */
+#ifdef CONFIG_HAVE_JSON_C
+static void write_json_test_data(struct pingstate *state)
+{
+	FILE *fh = state->resp_file_out;
+	
+	/* Write test data as JSON array entry */
+	fprintf(fh, "{\n");
+	fprintf(fh, "  \"type\": \"ping_test\",\n");
+	fprintf(fh, "  \"dst_name\": \"%s\",\n", state->hostname);
+	
+	/* Write address family as string */
+	json_write_address_family(fh, state->af);
+	
+	/* Write destination address if available */
+	if (!state->no_dst) {
+		json_write_sockaddr(fh, "dst_addr", 
+			(const struct sockaddr *)&state->sin6, state->socklen);
+	}
+	
+	/* Write source address if available */
+	if (!state->no_dst && !state->no_src) {
+		json_write_sockaddr(fh, "src_addr", 
+			(const struct sockaddr *)&state->loc_sin6, state->loc_socklen);
+	}
+	
+	/* Write protocol */
+	fprintf(fh, ", \"proto\": \"ICMP\"");
+	
+	/* Write packet size */
+	fprintf(fh, ", \"size\": %d", state->size);
+	
+	/* Write TTL if we got a reply */
+	if (state->got_reply) {
+		fprintf(fh, ", \"ttl\": %d", state->ttl);
+	}
+	
+	/* Write packet data if available */
+	if (state->result && strlen(state->result) > 0) {
+		fprintf(fh, ", \"packet_data\": \"%s\"", state->result);
+	}
+	
+	/* Write timestamp */
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	json_write_timestamp(fh, "timestamp", &now);
+	
+	fprintf(fh, "\n}\n");
+}
+#endif /* CONFIG_HAVE_JSON_C */
+
 static void report(struct pingstate *state)
 {
 	int r;
@@ -286,8 +341,8 @@ static void report(struct pingstate *state)
 		fprintf(fh, ", " DBQ(ttr) ":%f", state->ttr);
 	}
 
-	fprintf(fh, ", " DBQ(af) ":%d",
-		state->af == AF_INET ? 4 : 6);
+	fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
+		af_to_string(state->af));
 
 	if (!state->no_dst)
 	{
@@ -326,6 +381,14 @@ static void report(struct pingstate *state)
 
 	if (state->out_filename)
 		fclose(fh);
+
+	/* Write JSON test data if resp_file_out is set and JSON support is available */
+#ifdef CONFIG_HAVE_JSON_C
+	if (state->resp_file_out)
+	{
+		write_json_test_data(state);
+	}
+#endif
 
 	/* Kill the event and close socket */
 	if (!state->response_in)
@@ -740,12 +803,7 @@ static void ping_xmit(struct pingstate *host)
 			getsockname(host->socket,
 				(struct sockaddr *)&host->loc_sin6,
 				&host->loc_socklen);
-			if (host->resp_file_out)
-			{
-				write_response(host->resp_file_out,
-					RESP_SOCKNAME, host->loc_socklen,
-					&host->loc_sin6);
-			}
+			/* JSON output will be written in write_json_test_data() */
 		}
 
 		if (host->response_in)

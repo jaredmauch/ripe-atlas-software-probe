@@ -10,6 +10,7 @@
 #include <event2/dns.h>
 #include <event2/event.h>
 #include <event2/event_struct.h>
+#include "portable_json.h"
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/ip6.h>
@@ -440,10 +441,10 @@ static void report(struct ntpstate *state)
 	}
 
 	proto= "UDP";
-	fprintf(fh, ", " DBQ(proto) ":" DBQ(%s) ", " DBQ(af) ": %d",
+	fprintf(fh, ", " DBQ(proto) ":" DBQ(%s) ", " DBQ(af) ":" DBQ(%s),
 		proto,
-		state->dnsip ? (state->do_v6 ? 6 : 4) :
-		(state->sin6.sin6_family == AF_INET6 ? 6 : 4));
+		af_num_to_string(state->dnsip ? (state->do_v6 ? 6 : 4) :
+		(state->sin6.sin6_family == AF_INET6 ? 6 : 4)));
 
 	if (!state->first && !state->dnsip)
 	{

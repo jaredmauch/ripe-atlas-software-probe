@@ -382,6 +382,53 @@ AS_IF([test "$ac_cv_header_openssl_ssl_h" = "yes"], [
     CFLAGS="$CFLAGS -DHAVE_OPENSSL_SSL_H=1"
 ])
 
+# Check for libjson-c (optional, for test suite)
+AC_ARG_ENABLE([json-c], [AS_HELP_STRING([--disable-json-c], [disable JSON support for test suite])], [], [enable_json_c=yes])
+
+if test "x${enable_json_c}" = "xyes"; then
+    AC_CHECK_HEADERS([json-c/json.h])
+    AC_CHECK_LIB([json-c], [json_object_from_file], [HAVE_JSON_C=yes], [HAVE_JSON_C=no])
+    
+    if test "x${HAVE_JSON_C}" = "xyes"; then
+        AC_DEFINE([CONFIG_HAVE_JSON_C], [1], [Define to 1 if json-c library is available])
+        JSON_LIBS="-ljson-c"
+        AC_MSG_NOTICE([JSON support enabled for test suite])
+    else
+        AC_MSG_WARN([JSON support not available - test suite will use binary format])
+        # Provide installation instructions based on OS
+        OS_NAME=`uname -s 2>/dev/null || echo "unknown"`
+        case "$OS_NAME" in
+        *FreeBSD*)
+            AC_MSG_WARN([To enable JSON support on FreeBSD: pkg install json-c])
+            ;;
+        *Linux*)
+            if test -f /etc/debian_version; then
+                AC_MSG_WARN([To enable JSON support on Debian/Ubuntu: apt-get install libjson-c-dev])
+            elif test -f /etc/redhat-release; then
+                AC_MSG_WARN([To enable JSON support on RHEL/CentOS: yum install json-c-devel])
+            elif test -f /etc/arch-release; then
+                AC_MSG_WARN([To enable JSON support on Arch Linux: pacman -S json-c])
+            elif test -f /etc/alpine-release; then
+                AC_MSG_WARN([To enable JSON support on Alpine: apk add json-c-dev])
+            else
+                AC_MSG_WARN([To enable JSON support: install libjson-c development package])
+            fi
+            ;;
+        *Darwin*)
+            AC_MSG_WARN([To enable JSON support on macOS: brew install json-c])
+            ;;
+        *)
+            AC_MSG_WARN([To enable JSON support: install libjson-c development package])
+            ;;
+        esac
+    fi
+else
+    AC_MSG_NOTICE([JSON support disabled by user])
+    HAVE_JSON_C=no
+fi
+
+AC_SUBST([JSON_LIBS])
+
 # Final CFLAGS substitution
 AC_SUBST([CFLAGS])
 
