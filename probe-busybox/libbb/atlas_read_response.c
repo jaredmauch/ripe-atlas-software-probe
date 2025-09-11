@@ -124,9 +124,13 @@ static int map_linux_response_type(int linux_type) {
 	
 	fprintf(stderr, "DEBUG: map_linux_response_type: mapping Linux type %d for tool %s\n", linux_type, current_tool);
 	
-	/* For now, just pass through the types and focus on data structure conversion */
-	fprintf(stderr, "DEBUG: map_linux_response_type: passing through Linux type %d\n", linux_type);
-	return linux_type;
+	/* Use application-specific response type mapping */
+	int mapped_type = map_linux_to_app_response_type(linux_type, current_tool);
+	
+	fprintf(stderr, "DEBUG: map_linux_response_type: mapped Linux type %d -> %d for %s\n", 
+		linux_type, mapped_type, current_tool);
+	
+	return mapped_type;
 }
 
 /* Convert Linux timeval to local OS timeval */

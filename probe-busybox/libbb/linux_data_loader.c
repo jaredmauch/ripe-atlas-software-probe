@@ -106,6 +106,71 @@ static void convert_linux_addrinfo_to_local(const struct linux_addrinfo *linux_a
 	local_ai->ai_next = (struct addrinfo *)linux_ai->ai_next;
 }
 
+/* Application-specific response type mapping based on calling application */
+static int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
+	if (!app_tool) return linux_type;
+	
+	/* Map Linux response types to application-specific expected types */
+	if (strcmp(app_tool, "evtraceroute") == 0) {
+		/* evtraceroute expects: 4, 1, 2, 5, 6, 7, 3, 8, 9 */
+		/* Map Linux types to evtraceroute expected sequence */
+		switch (linux_type) {
+			case 8: return 8; /* RESP_ADDRINFO - matches */
+			case 9: return 9; /* RESP_ADDRINFO_SA - matches */
+			case 3: return 3; /* RESP_SOCKNAME - matches */
+			case 7: return 7; /* RESP_SENDTO - matches */
+			case 4: return 4; /* RESP_PROTO - matches */
+			case 1: return 1; /* RESP_PACKET - matches */
+			case 5: return 2; /* RESP_RCVDTTL -> RESP_PEERNAME (evtraceroute expects PEERNAME here) */
+			case 6: return 5; /* RESP_RCVDTCLASS -> RESP_RCVDTTL */
+			default: return linux_type;
+		}
+	} else if (strcmp(app_tool, "evtdig") == 0) {
+		/* evtdig expects: 1, 2, 8, 3, 8, 9 */
+		switch (linux_type) {
+			case 1: return 1; /* RESP_PACKET */
+			case 2: return 2; /* RESP_PEERNAME */
+			case 8: return 8; /* RESP_CMSG */
+			case 3: return 3; /* RESP_SOCKNAME */
+			case 9: return 9; /* RESP_ADDRINFO_SA */
+			default: return linux_type;
+		}
+	} else if (strcmp(app_tool, "evping") == 0) {
+		/* evping expects: 1, 2, 5, 4, 3, 8, 9 */
+		switch (linux_type) {
+			case 1: return 1; /* RESP_PACKET */
+			case 2: return 2; /* RESP_PEERNAME */
+			case 5: return 5; /* RESP_DSTADDR */
+			case 4: return 4; /* RESP_TTL */
+			case 3: return 3; /* RESP_SOCKNAME */
+			case 8: return 8; /* RESP_ADDRINFO */
+			case 9: return 9; /* RESP_ADDRINFO_SA */
+			default: return linux_type;
+		}
+	} else if (strcmp(app_tool, "evntp") == 0) {
+		/* evntp expects: 4, 1, 5, 3, 8, 9 */
+		switch (linux_type) {
+			case 4: return 4; /* RESP_TIMEOFDAY */
+			case 1: return 1; /* RESP_PACKET */
+			case 5: return 5; /* RESP_DSTADDR */
+			case 3: return 3; /* RESP_SOCKNAME */
+			case 8: return 8; /* RESP_ADDRINFO */
+			case 9: return 9; /* RESP_ADDRINFO_SA */
+			default: return linux_type;
+		}
+	} else if (strcmp(app_tool, "evhttpget") == 0 || strcmp(app_tool, "evsslgetcert") == 0) {
+		/* evhttpget/evsslgetcert expect: 1, 3, 5 */
+		switch (linux_type) {
+			case 1: return 1; /* RESP_PACKET */
+			case 3: return 3; /* RESP_SOCKNAME */
+			case 5: return 5; /* RESP_DSTADDR */
+			default: return linux_type;
+		}
+	}
+	
+	return linux_type;
+}
+
 /* Load and convert Linux binary data to local format */
 int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, 
                           void *local_data, size_t *local_size) {
@@ -120,8 +185,17 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	fprintf(stderr, "\n");
 	
-	/* Handle different response types */
-	if (response_type == RESP_SOCKNAME || response_type == RESP_PEERNAME || response_type == RESP_ADDRINFO_SA) {
+	/* Application-specific response type mapping */
+	extern const char *current_tool;
+	int mapped_type = response_type;
+	if (current_tool) {
+		mapped_type = map_linux_to_app_response_type(response_type, current_tool);
+		fprintf(stderr, "DEBUG: load_linux_binary_data: processing for tool '%s', mapped type %d->%d\n", 
+			current_tool, response_type, mapped_type);
+	}
+	
+	/* Handle different response types based on the mapped type */
+	if (mapped_type == RESP_SOCKNAME || mapped_type == RESP_PEERNAME || mapped_type == RESP_ADDRINFO_SA) {
 		/* Handle sockaddr structures */
 		fprintf(stderr, "DEBUG: Processing sockaddr structure (type %d)\n", response_type);
 		if (linux_size >= sizeof(struct linux_sockaddr_in)) {
@@ -146,7 +220,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 				return 0;
 			}
 		}
-	} else if (response_type == RESP_TIMEOFDAY) {
+	} else if (mapped_type == RESP_TIMEOFDAY) {
 		/* Handle timeval structures */
 		fprintf(stderr, "DEBUG: Processing timeval structure\n");
 		if (linux_size >= sizeof(struct linux_timeval)) {
@@ -158,7 +232,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 			fprintf(stderr, "DEBUG: Converted to FreeBSD timeval, size=%zu\n", *local_size);
 			return 0;
 		}
-	} else if (response_type == RESP_ADDRINFO) {
+	} else if (mapped_type == RESP_ADDRINFO) {
 		/* Handle addrinfo structures */
 		fprintf(stderr, "DEBUG: Processing addrinfo structure\n");
 		if (linux_size >= sizeof(struct linux_addrinfo)) {

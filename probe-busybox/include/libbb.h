@@ -484,6 +484,7 @@ extern void read_response(int fd, int type, size_t *sizep, void *data);
 extern void set_response_tool(const char *tool);
 extern int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, 
                                  void *local_data, size_t *local_size);
+extern int map_linux_to_app_response_type(int linux_type, const char *app_tool);
 extern void read_response_file(FILE *file, int type, size_t *sizep,
 	void *data);
 extern void write_response(FILE *file, int type, size_t size, void *data);
