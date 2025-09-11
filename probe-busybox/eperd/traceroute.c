@@ -16,6 +16,7 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <arpa/inet.h>
+#include "portable_json.h"
 
 /* Platform-specific includes */
 #ifdef __FreeBSD__
@@ -670,10 +671,10 @@ static void report(struct trtstate *state)
 		proto= "TCP";
 	else
 		proto= "UDP";
-	fprintf(fh, ", " DBQ(proto) ":" DBQ(%s) ", " DBQ(af) ": %d",
+	fprintf(fh, ", " DBQ(proto) ":" DBQ(%s) ", " DBQ(af) ":" DBQ(%s),
 		proto,
-		state->dnsip ? (state->do_v6 ? 6 : 4) :
-		(state->sin6.sin6_family == AF_INET6 ? 6 : 4));
+		af_num_to_string(state->dnsip ? (state->do_v6 ? 6 : 4) :
+		(state->sin6.sin6_family == AF_INET6 ? 6 : 4)));
 
 	fprintf(fh, ", " DBQ(size) ":%d", state->maxpacksize);
 	if (state->parismod)

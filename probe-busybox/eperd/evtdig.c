@@ -176,6 +176,9 @@
 #include "libbb.h"
 #include "atlas_bb64.h"
 #include "atlas_probe.h"
+#include "portable_json.h"
+
+#define DBQ(str) "\"" #str "\""
 #include <netdb.h>
 #include <getopt.h>
 #include <netinet/in.h>
@@ -3998,7 +4001,8 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 		}
 		JS(dst_addr, addrstr);
 		JS(dst_port, qry->port_as_char);
-		JD(af, qry->ressent->ai_family == AF_INET6 ? 6 : 4);
+		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
+			af_to_string(qry->ressent->ai_family));
 	}
 	else if(qry->dst_ai_family && qry->server_name)
 	{
@@ -4007,16 +4011,14 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 		}
 		JS(dst_addr , qry->dst_addr_str);
 		JS(dst_port, qry->port_as_char);
-		JD(af, qry->dst_ai_family == AF_INET6 ? 6 : 4);
+		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
+			af_to_string(qry->dst_ai_family));
 	}
 	else if(qry->server_name) {
 		JS(dst_name,  qry->server_name);
 		// When using fuzzing files, use opt_AF to determine address family
-		if(qry->opt_AF == AF_INET6) {
-			JD(af, 6);
-		} else if(qry->opt_AF == AF_INET) {
-			JD(af, 4);
-		}
+		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
+			af_to_string(qry->opt_AF));
 	}
 	
 	if(qry->loc_sin6.sin6_family) {

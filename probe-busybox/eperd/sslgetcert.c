@@ -16,6 +16,7 @@ Created:	April 2013 by Philip Homburg for RIPE NCC
 #include "eperd.h"
 #include "tcputil.h"
 #include "atlas_path.h"
+#include "portable_json.h"
 
 #define SAFE_PREFIX_IN ATLAS_DATA_OUT
 #define SAFE_PREFIX_OUT_REL ATLAS_DATA_NEW_REL
@@ -1061,8 +1062,8 @@ static void report(struct state *state)
 			hostbuf, sizeof(hostbuf), NULL, 0,
 			NI_NUMERICHOST);
 		fprintf(fh, DBQ(dst_addr) ":" DBQ(%s) ", ", hostbuf);
-		fprintf(fh, DBQ(af) ": %d, ",
-			state->sin6.sin6_family == AF_INET6 ? 6 : 4);
+		fprintf(fh, DBQ(af) ":" DBQ(%s),
+			af_to_string(state->sin6.sin6_family));
 
 	}
 
@@ -1249,8 +1250,8 @@ static FILE *report_head(struct state *state)
 		hostbuf, sizeof(hostbuf), NULL, 0,
 		NI_NUMERICHOST);
 	fprintf(fh, ", " DBQ(dst_addr) ":" DBQ(%s), hostbuf);
-	fprintf(fh, ", " DBQ(af) ": %d",
-		state->sin6.sin6_family == AF_INET6 ? 6 : 4);
+	fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
+		af_to_string(state->sin6.sin6_family));
 
 	getnameinfo((struct sockaddr *)&state->loc_sin6,
 		state->loc_socklen, hostbuf, sizeof(hostbuf), NULL, 0,

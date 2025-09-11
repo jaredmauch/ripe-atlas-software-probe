@@ -28,6 +28,9 @@
 #include "libbb.h"
 #include "atlas_bb64.h"
 #include "atlas_probe.h"
+#include "portable_json.h"
+
+#define DBQ(str) "\"" #str "\""
 #include <netdb.h>
 #include <getopt.h>
 #include <netinet/in.h>
@@ -615,7 +618,8 @@ static void fmt_ssl_host(struct tls_qry *qry, bool is_err)
 			if(strlen(addrstr))
 				JS(src_addr, addrstr);
 		}
-		JD_NC(af, qry->addr_curr->ai_family == AF_INET6 ? 6 : 4);
+		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
+			af_to_string(qry->addr_curr->ai_family));
 	}
 	else if (qry->ui->host) {
 		JS_NC(dst_name, qry->ui->host);
