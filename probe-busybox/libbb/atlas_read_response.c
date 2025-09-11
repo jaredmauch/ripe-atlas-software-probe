@@ -45,6 +45,7 @@ static int is_linux_datafile = 0;
 /* Set the current tool for response type mapping */
 void set_response_tool(const char *tool) {
 	current_tool = tool;
+	fprintf(stderr, "DEBUG: set_response_tool: tool set to '%s'\n", tool);
 }
 
 /* Detect if we're dealing with a Linux datafile based on response types */
@@ -52,8 +53,10 @@ static int detect_linux_datafile(int response_type) {
 	/* If we see response types that are Linux-specific, mark as Linux datafile */
 	if (response_type == 5 || response_type == 6 || response_type == 7) {
 		is_linux_datafile = 1;
+		fprintf(stderr, "DEBUG: detect_linux_datafile: detected Linux datafile (type %d)\n", response_type);
 		return 1;
 	}
+	fprintf(stderr, "DEBUG: detect_linux_datafile: type %d, is_linux_datafile=%d\n", response_type, is_linux_datafile);
 	return is_linux_datafile;
 }
 
@@ -77,18 +80,23 @@ static int map_linux_response_type(int linux_type) {
 	
 	/* Map based on tool-specific response type expectations */
 	if (strstr(current_tool, "traceroute") || strstr(current_tool, "evtraceroute")) {
+		int mapped_type;
 		switch (linux_type) {
-			case 5: return 4;  /* RESP_RCVDTTL -> RESP_PROTO (Linux datafile has different sequence) */
-			case 6: return 5;  /* RESP_RCVDTCLASS -> RESP_RCVDTTL */
-			case 7: return 6;  /* RESP_SENDTO -> RESP_RCVDTCLASS */
-			case 4: return 7;  /* RESP_PROTO -> RESP_SENDTO */
-			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
-			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
-			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
-			case 8: return 8;  /* RESP_ADDRINFO -> RESP_ADDRINFO */
-			case 9: return 9;  /* RESP_ADDRINFO_SA -> RESP_ADDRINFO_SA */
-			default: return linux_type;
+			case 5: mapped_type = 4; break;  /* RESP_RCVDTTL -> RESP_PROTO (Linux datafile has different sequence) */
+			case 6: mapped_type = 5; break;  /* RESP_RCVDTCLASS -> RESP_RCVDTTL */
+			case 7: mapped_type = 6; break;  /* RESP_SENDTO -> RESP_RCVDTCLASS */
+			case 4: mapped_type = 7; break;  /* RESP_PROTO -> RESP_SENDTO */
+			case 1: mapped_type = 1; break;  /* RESP_PACKET -> RESP_PACKET */
+			case 2: mapped_type = 2; break;  /* RESP_PEERNAME -> RESP_PEERNAME */
+			case 3: mapped_type = 3; break;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
+			case 8: mapped_type = 8; break;  /* RESP_ADDRINFO -> RESP_ADDRINFO */
+			case 9: mapped_type = 9; break;  /* RESP_ADDRINFO_SA -> RESP_ADDRINFO_SA */
+			default: 
+				fprintf(stderr, "DEBUG: map_linux_response_type: unknown Linux type %d, returning as-is\n", linux_type);
+				return linux_type;
 		}
+		fprintf(stderr, "DEBUG: map_linux_response_type: mapped Linux type %d -> %d\n", linux_type, mapped_type);
+		return mapped_type;
 	} else if (strstr(current_tool, "ping") || strstr(current_tool, "evping")) {
 		switch (linux_type) {
 			case 4: return 4;  /* RESP_TTL -> RESP_TTL */
@@ -427,6 +435,8 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	}
 	/* Apply response type mapping for cross-platform compatibility */
 	int mapped_type = map_linux_response_type(tmp_type);
+	
+	fprintf(stderr, "DEBUG: read_response: expected type %d, got type %d, mapped to %d\n", type, tmp_type, mapped_type);
 	
 	if (mapped_type != type)
 	{
