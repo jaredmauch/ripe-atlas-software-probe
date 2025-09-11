@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "source": "converted from binary",
+  "original_file": "evntp-4.net",
+  "responses": [
+    {
+      "type": 5,
+      "size": 48,
+      "data": {
+        "base64": "AAAAAAAAAIACAAAAAgAAABEAAAAQAAAAAAAAALB6tQEAAAAAAAAAAAAAAAAAAAAA",
+        "hex": "00000000000000800200000002000000110000001000000000000000b07ab50100000000000000000000000000000000",
+        "size": 48
+      }
+    },
+    {
+      "type": 0,
+      "size": 6,
+      "data": {
+        "base64": "EAAAAAAA",
+        "hex": "100000000000",
+        "size": 6
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "source": "converted from binary",
+  "original_file": "evping-4.net",
+  "responses": [
+    {
+      "type": 6,
+      "size": 48,
+      "data": {
+        "base64": "AAAAAAAAAIACAAAAAgAAABEAAAAQAAAAAAAAAABLiQAAAAAAAAAAAAAAAAAAAAAA",
+        "hex": "00000000000000800200000002000000110000001000000000000000004b890000000000000000000000000000000000",
+        "size": 48
+      }
+    },
+    {
+      "type": 0,
+      "size": 7,
+      "data": {
+        "base64": "EAAAAAAAAA==",
+        "hex": "10000000000000",
+        "size": 7
+      }
+    }
+  ]
+}

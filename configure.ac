@@ -327,6 +327,22 @@ AC_CHECK_HEADERS([openssl/ssl.h])
 AC_CHECK_LIB([ssl], [SSL_new], [HAVE_OPENSSL=yes], [HAVE_OPENSSL=no])
 AM_CONDITIONAL([HAVE_OPENSSL], [test "$HAVE_OPENSSL" = "yes"])
 
+# Check for libjson-c availability (optional, for JSON fuzzing files)
+AC_CHECK_HEADERS([json-c/json.h])
+AC_CHECK_LIB([json-c], [json_object_from_file], [HAVE_JSON_C=yes], [HAVE_JSON_C=no])
+AM_CONDITIONAL([HAVE_JSON_C], [test "$HAVE_JSON_C" = "yes"])
+
+if test "$HAVE_JSON_C" = "yes"; then
+	AC_DEFINE([CONFIG_HAVE_JSON_C], [1], [Define to 1 if json-c library is available])
+fi
+
+# Store the result for later display
+if test "$HAVE_JSON_C" = "no"; then
+	JSON_C_MISSING=yes
+else
+	JSON_C_MISSING=no
+fi
+
 # Check for required libraries
 AC_CHECK_LIB([c], [main])
 AC_CHECK_LIB([m], [main])
@@ -384,4 +400,61 @@ if test "x${probe_type}" = 'xfreebsd'; then
 fi
 
 AC_CONFIG_SUBDIRS([probe-busybox/libevent-2.1.11-stable])
+
+# Display test suite requirements at the end
+echo ""
+echo "=========================================="
+echo "Test Suite Requirements:"
+echo "=========================================="
+
+if test "$JSON_C_MISSING" = "yes"; then
+	echo "WARNING: For the test suite to work properly, libjson-c is required"
+	echo "         This enables JSON-based fuzzing files for better portability"
+	echo ""
+	
+	# Detect operating system and provide appropriate package installation command
+	OS_NAME=`uname -s 2>/dev/null || echo "unknown"`
+	case "$OS_NAME" in
+	*FreeBSD*)
+		echo "To install on FreeBSD:"
+		echo "  pkg install json-c"
+		;;
+	*Linux*)
+		# Try to detect Linux distribution
+		if test -f /etc/debian_version; then
+			echo "To install on Debian/Ubuntu:"
+			echo "  apt-get install libjson-c-dev"
+		elif test -f /etc/redhat-release; then
+			echo "To install on Red Hat/CentOS:"
+			echo "  yum install json-c-devel"
+		elif test -f /etc/arch-release; then
+			echo "To install on Arch Linux:"
+			echo "  pacman -S json-c"
+		elif test -f /etc/alpine-release; then
+			echo "To install on Alpine Linux:"
+			echo "  apk add json-c-dev"
+		else
+			echo "To install on Linux:"
+			echo "  Install libjson-c development package for your distribution"
+		fi
+		;;
+	*Darwin*)
+		echo "To install on macOS:"
+		echo "  brew install json-c"
+		;;
+	*)
+		echo "To install:"
+		echo "  Install libjson-c development package for your system"
+		;;
+	esac
+	echo ""
+	echo "Without libjson-c, the test suite will use binary fuzzing files"
+	echo "which may have portability issues between different operating systems."
+else
+	echo "✓ libjson-c found - JSON fuzzing files will be supported"
+fi
+
+echo "=========================================="
+echo ""
+
 AC_OUTPUT

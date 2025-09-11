@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "source": "converted from binary",
+  "original_file": "evhttpget-6.net",
+  "responses": [
+    {
+      "type": 3,
+      "size": 28,
+      "data": {
+        "family": "AF_INET6",
+        "address": "2606:4700::6812:152c",
+        "port": 20480,
+        "flowinfo": 0
+      }
+    },
+    {
+      "type": 0,
+      "size": 2,
+      "data": {
+        "base64": "HAA=",
+        "hex": "1c00",
+        "size": 2
+      }
+    }
+  ]
+}

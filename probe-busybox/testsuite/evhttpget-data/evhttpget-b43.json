@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "source": "converted from binary",
+  "original_file": "evhttpget-b43.net",
+  "responses": [
+    {
+      "type": 3,
+      "size": 16,
+      "data": {
+        "family": "AF_INET",
+        "address": "104.18.20.44",
+        "port": 20480
+      }
+    },
+    {
+      "type": 0,
+      "size": 2,
+      "data": {
+        "base64": "EAA=",
+        "hex": "1000",
+        "size": 2
+      }
+    }
+  ]
+}

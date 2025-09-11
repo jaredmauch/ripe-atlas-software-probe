@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "source": "converted from binary",
+  "original_file": "evtdig-ends0-1024.net",
+  "responses": [
+    {
+      "type": 10,
+      "size": 48,
+      "data": {
+        "base64": "AAAAAAAAAIAKAAAAAgAAABEAAAAcAAAAAAAAAJDjjwEAAAAAAAAAAAAAAAAAAAAA",
+        "hex": "00000000000000800a00000002000000110000001c0000000000000090e38f0100000000000000000000000000000000",
+        "size": 48
+      }
+    },
+    {
+      "type": 0,
+      "size": 11,
+      "data": {
+        "base64": "HAAAAAAAAAAKAAA=",
+        "hex": "1c000000000000000a0000",
+        "size": 11
+      }
+    }
+  ]
+}
