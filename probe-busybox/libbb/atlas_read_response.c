@@ -82,11 +82,11 @@ static int map_linux_response_type(int linux_type) {
 	if (strstr(current_tool, "traceroute") || strstr(current_tool, "evtraceroute")) {
 		int mapped_type;
 		switch (linux_type) {
-			case 6: mapped_type = 4; break;  /* RESP_RCVDTCLASS -> RESP_PROTO (Linux datafile has different sequence) */
-			case 7: mapped_type = 1; break;  /* RESP_SENDTO -> RESP_PACKET */
-			case 8: mapped_type = 2; break;  /* RESP_ADDRINFO -> RESP_PEERNAME */
-			case 9: mapped_type = 5; break;  /* RESP_ADDRINFO_SA -> RESP_RCVDTTL */
-			case 3: mapped_type = 6; break;  /* RESP_SOCKNAME -> RESP_RCVDTCLASS */
+			case 8: mapped_type = 4; break;  /* RESP_ADDRINFO -> RESP_PROTO (Linux datafile has different sequence) */
+			case 9: mapped_type = 1; break;  /* RESP_ADDRINFO_SA -> RESP_PACKET */
+			case 3: mapped_type = 2; break;  /* RESP_SOCKNAME -> RESP_PEERNAME */
+			case 6: mapped_type = 5; break;  /* RESP_RCVDTCLASS -> RESP_RCVDTTL */
+			case 7: mapped_type = 6; break;  /* RESP_SENDTO -> RESP_RCVDTCLASS */
 			case 4: mapped_type = 7; break;  /* RESP_PROTO -> RESP_SENDTO */
 			case 1: mapped_type = 1; break;  /* RESP_PACKET -> RESP_PACKET */
 			case 2: mapped_type = 2; break;  /* RESP_PEERNAME -> RESP_PEERNAME */
