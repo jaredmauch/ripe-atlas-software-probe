@@ -113,47 +113,79 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	fprintf(stderr, "DEBUG: load_linux_binary_data: type=%d, linux_size=%zu, local_size=%zu\n", 
 		response_type, linux_size, *local_size);
 	
+	/* Dump the raw Linux data for verification */
+	fprintf(stderr, "DEBUG: Raw Linux data (first 16 bytes): ");
+	for (size_t i = 0; i < linux_size && i < 16; i++) {
+		fprintf(stderr, "%02x ", ((const unsigned char*)linux_data)[i]);
+	}
+	fprintf(stderr, "\n");
+	
 	/* Handle different response types */
 	if (response_type == RESP_SOCKNAME || response_type == RESP_PEERNAME || response_type == RESP_ADDRINFO_SA) {
 		/* Handle sockaddr structures */
+		fprintf(stderr, "DEBUG: Processing sockaddr structure (type %d)\n", response_type);
 		if (linux_size >= sizeof(struct linux_sockaddr_in)) {
 			const struct linux_sockaddr_in *linux_sin = (const struct linux_sockaddr_in *)linux_data;
+			fprintf(stderr, "DEBUG: Linux sockaddr_in: family=%d, port=%d\n", 
+				linux_sin->sin_family, linux_sin->sin_port);
 			if (linux_sin->sin_family == AF_INET) {
 				convert_linux_sockaddr_in_to_local(linux_sin, (struct sockaddr_in *)local_data);
 				*local_size = sizeof(struct sockaddr_in);
+				fprintf(stderr, "DEBUG: Converted to FreeBSD sockaddr_in, size=%zu\n", *local_size);
 				return 0;
 			}
 		}
 		if (linux_size >= sizeof(struct linux_sockaddr_in6)) {
 			const struct linux_sockaddr_in6 *linux_sin6 = (const struct linux_sockaddr_in6 *)linux_data;
+			fprintf(stderr, "DEBUG: Linux sockaddr_in6: family=%d, port=%d\n", 
+				linux_sin6->sin6_family, linux_sin6->sin6_port);
 			if (linux_sin6->sin6_family == AF_INET6) {
 				convert_linux_sockaddr_in6_to_local(linux_sin6, (struct sockaddr_in6 *)local_data);
 				*local_size = sizeof(struct sockaddr_in6);
+				fprintf(stderr, "DEBUG: Converted to FreeBSD sockaddr_in6, size=%zu\n", *local_size);
 				return 0;
 			}
 		}
 	} else if (response_type == RESP_TIMEOFDAY) {
 		/* Handle timeval structures */
+		fprintf(stderr, "DEBUG: Processing timeval structure\n");
 		if (linux_size >= sizeof(struct linux_timeval)) {
 			const struct linux_timeval *linux_tv = (const struct linux_timeval *)linux_data;
+			fprintf(stderr, "DEBUG: Linux timeval: sec=%d, usec=%d\n", 
+				linux_tv->tv_sec, linux_tv->tv_usec);
 			convert_linux_timeval_to_local(linux_tv, (struct timeval *)local_data);
 			*local_size = sizeof(struct timeval);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD timeval, size=%zu\n", *local_size);
 			return 0;
 		}
 	} else if (response_type == RESP_ADDRINFO) {
 		/* Handle addrinfo structures */
+		fprintf(stderr, "DEBUG: Processing addrinfo structure\n");
 		if (linux_size >= sizeof(struct linux_addrinfo)) {
 			const struct linux_addrinfo *linux_ai = (const struct linux_addrinfo *)linux_data;
+			fprintf(stderr, "DEBUG: Linux addrinfo: family=%d, socktype=%d, protocol=%d\n", 
+				linux_ai->ai_family, linux_ai->ai_socktype, linux_ai->ai_protocol);
 			convert_linux_addrinfo_to_local(linux_ai, (struct addrinfo *)local_data);
 			*local_size = sizeof(struct addrinfo);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD addrinfo, size=%zu\n", *local_size);
 			return 0;
 		}
+	} else {
+		fprintf(stderr, "DEBUG: Processing generic data (type %d)\n", response_type);
 	}
 	
 	/* If we get here, just copy the data as-is */
 	size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
 	memcpy(local_data, linux_data, copy_size);
 	*local_size = copy_size;
+	
+	/* Dump the final converted data for verification */
+	fprintf(stderr, "DEBUG: Final converted data (first 16 bytes): ");
+	for (size_t i = 0; i < *local_size && i < 16; i++) {
+		fprintf(stderr, "%02x ", ((const unsigned char*)local_data)[i]);
+	}
+	fprintf(stderr, "\n");
+	
 	return 0;
 }
 
