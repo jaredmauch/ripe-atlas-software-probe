@@ -6,6 +6,27 @@
 #include "libbb.h"
 #include <netinet/in.h>
 
+/* Response types for packet replay */
+#define RESP_PACKET	1
+#define RESP_SOCKNAME	2
+#define RESP_DSTADDR	3
+#define RESP_PEERNAME	4
+#define RESP_PROTO	4
+#define RESP_RCVDTTL	5
+#define RESP_RCVDTCLASS	6
+#define RESP_SENDTO	7
+#define RESP_ADDRINFO	8
+#define RESP_ADDRINFO_SA	9
+#define RESP_TTL	4
+#define RESP_TIMEOFDAY	4
+#define RESP_READ_ERROR	4
+#define RESP_N_RESOLV	4
+#define RESP_RESOLVER	5
+#define RESP_LENGTH	6
+#define RESP_DATA	7
+#define RESP_CMSG	8
+#define RESP_TIMEOUT	9
+
 /* Linux-specific struct definitions for binary data compatibility */
 #ifdef __FreeBSD__
 
