@@ -3927,6 +3927,17 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 	void *ptr = NULL;
 	FILE *fh; 
 	char addrstr[INET6_ADDRSTRLEN];
+
+	// Initialize fh based on output destination
+	if (qry->out_filename) {
+		fh = fopen(qry->out_filename, "a");
+		if (!fh) {
+			crondlog(LVL8 "evtdig: unable to append to '%s'", qry->out_filename);
+			return;
+		}
+	} else {
+		fh = stdout;
+	}
 	u_int32_t serial;
 	int iMax ;
 	int flagAnswer = 0;
@@ -4258,16 +4269,6 @@ truncated:
 	}
 
 	if(write_out && qry->result.size){
-		if (qry->out_filename)
-		{
-			fh= fopen(qry->out_filename, "a");
-			if (!fh) {
-				crondlog(LVL8 "evtdig: unable to append to '%s'",
-						qry->out_filename);
-			}
-		}
-		else
-			fh = stdout;
 		if (fh) {
 			AS (" }\n");   /* RESULT { } */
 			fwrite(qry->result.buf, qry->result.size, 1 , fh);
