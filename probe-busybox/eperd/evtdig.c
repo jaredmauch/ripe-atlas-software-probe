@@ -1674,8 +1674,11 @@ static void tdig_send_query_callback(int unused UNUSED_PARAM, const short event 
 		 * to know for the client subnet option. We also need to
 		 * know the local address for the cookie option.
 		 */
-		qry->opt_AF =
-			((struct sockaddr *)(qry->res->ai_addr))->sa_family;
+		/* Only set opt_AF from resolved address if not using fuzzing data */
+		if (!qry->response_in) {
+			qry->opt_AF =
+				((struct sockaddr *)(qry->res->ai_addr))->sa_family;
+		}
 
 		r= mk_dns_buff(qry, outbuff, MAX_DNS_OUT_BUF_SIZE);
 		if (r == -1)
