@@ -19,6 +19,7 @@ lib-y += atlas_ipv6_option.o
 lib-y += atlas_name_macro.o
 lib-y += atlas_probe.o
 lib-y += atlas_read_response.o
+lib-y += linux_data_loader.o
 ifdef CONFIG_HAVE_JSON_C
 lib-y += atlas_read_response_json.o
 endif
