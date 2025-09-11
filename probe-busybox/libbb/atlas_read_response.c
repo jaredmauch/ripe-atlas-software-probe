@@ -63,21 +63,25 @@ static int map_linux_response_type(int linux_type) {
 	detect_linux_datafile(linux_type);
 	
 	if (!current_tool) {
+		fprintf(stderr, "DEBUG: map_linux_response_type: no current_tool set\n");
 		return linux_type; /* No mapping if tool not set */
 	}
 	
 	/* Only apply mapping if we detected a Linux datafile */
 	if (!is_linux_datafile) {
+		fprintf(stderr, "DEBUG: map_linux_response_type: not a Linux datafile\n");
 		return linux_type;
 	}
+	
+	fprintf(stderr, "DEBUG: map_linux_response_type: mapping Linux type %d for tool %s\n", linux_type, current_tool);
 	
 	/* Map based on tool-specific response type expectations */
 	if (strstr(current_tool, "traceroute") || strstr(current_tool, "evtraceroute")) {
 		switch (linux_type) {
-			case 5: return 5;  /* RESP_RCVDTTL -> RESP_RCVDTTL (already correct) */
-			case 6: return 6;  /* RESP_RCVDTCLASS -> RESP_RCVDTCLASS (already correct) */
-			case 7: return 7;  /* RESP_SENDTO -> RESP_SENDTO (already correct) */
-			case 4: return 4;  /* RESP_PROTO -> RESP_PROTO (already correct) */
+			case 5: return 4;  /* RESP_RCVDTTL -> RESP_PROTO (Linux datafile has different sequence) */
+			case 6: return 5;  /* RESP_RCVDTCLASS -> RESP_RCVDTTL */
+			case 7: return 6;  /* RESP_SENDTO -> RESP_RCVDTCLASS */
+			case 4: return 7;  /* RESP_PROTO -> RESP_SENDTO */
 			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
 			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
 			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
@@ -98,6 +102,18 @@ static int map_linux_response_type(int linux_type) {
 		switch (linux_type) {
 			case 4: return 4;  /* RESP_N_RESOLV -> RESP_N_RESOLV */
 			case 5: return 5;  /* RESP_RESOLVER -> RESP_RESOLVER */
+			case 6: return 6;  /* RESP_LENGTH -> RESP_LENGTH */
+			case 7: return 7;  /* RESP_DATA -> RESP_DATA */
+			case 8: return 8;  /* RESP_CMSG -> RESP_CMSG */
+			case 9: return 9;  /* RESP_TIMEOUT -> RESP_TIMEOUT */
+			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
+			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
+			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
+			default: return linux_type;
+		}
+	} else if (strstr(current_tool, "ntp") || strstr(current_tool, "evntp")) {
+		switch (linux_type) {
+			case 4: return 4;  /* RESP_TIMEOFDAY -> RESP_TIMEOFDAY */
 			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
 			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
 			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
@@ -105,7 +121,7 @@ static int map_linux_response_type(int linux_type) {
 		}
 	}
 	
-	return linux_type; /* No mapping needed */
+	return linux_type; /* Default: no mapping */
 }
 
 /* Convert Linux timeval to local OS timeval */
