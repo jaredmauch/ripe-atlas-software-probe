@@ -67,6 +67,9 @@ int evtraceroute_main(int argc UNUSED_PARAM, char **argv)
 	void *state;
 
 	INIT_G();
+	
+	/* Set tool name for response type mapping */
+	set_response_tool("evtraceroute");
 
 	/* Create libevent event base */
 	EventBase= event_base_new();

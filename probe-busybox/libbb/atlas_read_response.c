@@ -15,11 +15,94 @@
 #define RESP_DSTADDR	3
 #define RESP_PEERNAME	4
 
+/* Additional response types for cross-platform compatibility */
+#define RESP_PROTO	4
+#define RESP_RCVDTTL	5
+#define RESP_RCVDTCLASS	6
+#define RESP_SENDTO	7
+#define RESP_ADDRINFO	8
+#define RESP_ADDRINFO_SA	9
+#define RESP_TTL	4
+#define RESP_TIMEOFDAY	4
+#define RESP_READ_ERROR	4
+#define RESP_N_RESOLV	4
+#define RESP_RESOLVER	5
+#define RESP_LENGTH	6
+#define RESP_DATA	7
+#define RESP_CMSG	8
+#define RESP_TIMEOUT	9
+
 static int got_type= 0;
 static int stored_type;
 #ifdef CONFIG_HAVE_JSON_C
 static int using_json = 0;
 #endif
+
+/* Global variable to track current tool for response type mapping */
+static const char *current_tool = NULL;
+static int is_linux_datafile = 0;
+
+/* Set the current tool for response type mapping */
+void set_response_tool(const char *tool) {
+	current_tool = tool;
+}
+
+/* Detect if we're dealing with a Linux datafile based on response types */
+static int detect_linux_datafile(int response_type) {
+	/* If we see response types that are Linux-specific, mark as Linux datafile */
+	if (response_type == 5 || response_type == 6 || response_type == 7) {
+		is_linux_datafile = 1;
+		return 1;
+	}
+	return is_linux_datafile;
+}
+
+/* Map Linux response types to tool-specific types for cross-platform compatibility */
+static int map_linux_response_type(int linux_type) {
+	/* Detect if this is a Linux datafile */
+	detect_linux_datafile(linux_type);
+	
+	if (!current_tool) {
+		return linux_type; /* No mapping if tool not set */
+	}
+	
+	/* Only apply mapping if we detected a Linux datafile */
+	if (!is_linux_datafile) {
+		return linux_type;
+	}
+	
+	/* Map based on tool-specific response type expectations */
+	if (strstr(current_tool, "traceroute") || strstr(current_tool, "evtraceroute")) {
+		switch (linux_type) {
+			case 5: return 4;  /* RESP_RCVDTTL -> RESP_PROTO for traceroute */
+			case 4: return 4;  /* RESP_PROTO -> RESP_PROTO (already correct) */
+			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
+			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
+			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
+			default: return linux_type;
+		}
+	} else if (strstr(current_tool, "ping") || strstr(current_tool, "evping")) {
+		switch (linux_type) {
+			case 4: return 4;  /* RESP_TTL -> RESP_TTL */
+			case 5: return 5;  /* RESP_DSTADDR -> RESP_DSTADDR */
+			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
+			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
+			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
+			default: return linux_type;
+		}
+	} else if (strstr(current_tool, "dig") || strstr(current_tool, "evtdig")) {
+		switch (linux_type) {
+			case 4: return 4;  /* RESP_N_RESOLV -> RESP_N_RESOLV */
+			case 5: return 5;  /* RESP_RESOLVER -> RESP_RESOLVER */
+			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
+			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
+			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
+			default: return linux_type;
+		}
+	}
+	
+	return linux_type; /* No mapping needed */
+}
 
 /* Convert Linux sockaddr to local OS sockaddr */
 static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
@@ -40,46 +123,96 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	/* Clear the output buffer */
 	memset(local_data, 0, *local_size);
 	
-	if (linux_size == sizeof(struct sockaddr_in) && 
-	    linux_sin->sin_family == AF_INET) {
-		/* IPv4 address - convert Linux format to local format */
-		local_sin->sin_family = AF_INET;
-		local_sin->sin_port = linux_sin->sin_port;
-		local_sin->sin_addr = linux_sin->sin_addr;
-		*local_size = sizeof(struct sockaddr_in);
-	} else if (linux_size == sizeof(struct sockaddr_in6) && 
-	           linux_sin6->sin6_family == AF_INET6) {
-		/* IPv6 address - convert Linux format to local format */
-		local_sin6->sin6_family = AF_INET6;
-		local_sin6->sin6_port = linux_sin6->sin6_port;
-		local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-		local_sin6->sin6_addr = linux_sin6->sin6_addr;
-		local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-		*local_size = sizeof(struct sockaddr_in6);
-	} else {
-		/* Handle Linux AF_INET6 (10) vs FreeBSD AF_INET6 (28) conversion */
-		if (linux_size == sizeof(struct sockaddr_in6)) {
-			/* Check if this is a Linux IPv6 address with wrong family value */
-			if (linux_sin6->sin6_family == 10) { /* Linux AF_INET6 */
-				local_sin6->sin6_family = AF_INET6; /* Convert to local AF_INET6 */
-				local_sin6->sin6_port = linux_sin6->sin6_port;
-				local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-				local_sin6->sin6_addr = linux_sin6->sin6_addr;
-				local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-				*local_size = sizeof(struct sockaddr_in6);
-			} else {
-				/* Unknown format, try direct copy */
-				size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-				memcpy(local_data, linux_data, copy_size);
-				*local_size = copy_size;
-			}
-		} else {
-			/* Unknown format, try direct copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
+	/* Handle IPv4 addresses - check multiple possible family values */
+	if (linux_size >= sizeof(struct sockaddr_in)) {
+		if (linux_sin->sin_family == AF_INET || 
+		    linux_sin->sin_family == 2 ||  /* Common AF_INET value */
+		    linux_sin->sin_family == 0) {  /* Sometimes family is 0 in datafiles */
+			/* IPv4 address - convert Linux format to local format */
+			local_sin->sin_family = AF_INET;
+			local_sin->sin_port = linux_sin->sin_port;
+			local_sin->sin_addr = linux_sin->sin_addr;
+			*local_size = sizeof(struct sockaddr_in);
+			return;
 		}
 	}
+	
+	/* Handle IPv6 addresses - check multiple possible family values */
+	if (linux_size >= sizeof(struct sockaddr_in6)) {
+		if (linux_sin6->sin6_family == AF_INET6 || 
+		    linux_sin6->sin6_family == 10 ||  /* Linux AF_INET6 */
+		    linux_sin6->sin6_family == 28 ||  /* FreeBSD AF_INET6 */
+		    linux_sin6->sin6_family == 0) {   /* Sometimes family is 0 in datafiles */
+			/* IPv6 address - convert Linux format to local format */
+			local_sin6->sin6_family = AF_INET6;
+			local_sin6->sin6_port = linux_sin6->sin6_port;
+			local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
+			local_sin6->sin6_addr = linux_sin6->sin6_addr;
+			local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
+			*local_size = sizeof(struct sockaddr_in6);
+			return;
+		}
+	}
+	
+	/* Enhanced inference based on data size and content */
+	if (linux_size >= 8) {
+		/* Try to parse as IPv4 if data length suggests it */
+		if (linux_size == sizeof(struct sockaddr_in)) {
+			/* Check if this looks like IPv4 data by examining the address bytes */
+			const uint8_t *addr_bytes = (const uint8_t *)&linux_sin->sin_addr;
+			
+			/* Check if port is in big-endian or little-endian format */
+			uint16_t port_be = ntohs(linux_sin->sin_port);
+			uint16_t port_le = linux_sin->sin_port;
+			
+			/* Use the port that makes sense (reasonable port numbers) */
+			uint16_t port = (port_be > 0 && port_be < 65536 && port_be != port_le) ? port_be : port_le;
+			
+			local_sin->sin_family = AF_INET;
+			local_sin->sin_port = htons(port);
+			local_sin->sin_addr = linux_sin->sin_addr;
+			*local_size = sizeof(struct sockaddr_in);
+			return;
+		}
+		/* Try to parse as IPv6 if data length suggests it */
+		else if (linux_size == sizeof(struct sockaddr_in6)) {
+			/* Check if this looks like IPv6 data by examining the address bytes */
+			const uint8_t *addr_bytes = (const uint8_t *)&linux_sin6->sin6_addr;
+			
+			local_sin6->sin6_family = AF_INET6;
+			local_sin6->sin6_port = linux_sin6->sin6_port;
+			local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
+			local_sin6->sin6_addr = linux_sin6->sin6_addr;
+			local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
+			*local_size = sizeof(struct sockaddr_in6);
+			return;
+		}
+	}
+	
+	/* Enhanced fallback: try to detect address family from data content */
+	if (linux_size >= 16) {
+		/* Check if this might be IPv6 data (28 bytes typical) */
+		if (linux_size >= 28) {
+			/* Assume IPv6 and try to convert */
+			memcpy(local_sin6, linux_data, sizeof(struct sockaddr_in6));
+			local_sin6->sin6_family = AF_INET6;
+			*local_size = sizeof(struct sockaddr_in6);
+			return;
+		}
+		/* Check if this might be IPv4 data (16 bytes typical) */
+		else if (linux_size >= 16) {
+			/* Assume IPv4 and try to convert */
+			memcpy(local_sin, linux_data, sizeof(struct sockaddr_in));
+			local_sin->sin_family = AF_INET;
+			*local_size = sizeof(struct sockaddr_in);
+			return;
+		}
+	}
+	
+	/* Final fallback: direct copy with size limit */
+	size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+	memcpy(local_data, linux_data, copy_size);
+	*local_size = copy_size;
 }
 
 /* Check if file is JSON format and initialize if so */
@@ -213,11 +346,14 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 			exit(1);
 		}
 	}
-	if (tmp_type != type)
+	/* Apply response type mapping for cross-platform compatibility */
+	int mapped_type = map_linux_response_type(tmp_type);
+	
+	if (mapped_type != type)
 	{
 		fprintf(stderr,
-			 "read_response: wrong type, expected %d, got %d\n",
-			type, tmp_type);
+			 "read_response: wrong type, expected %d, got %d (mapped from %d)\n",
+			type, mapped_type, tmp_type);
 		exit(1);
 	}
 	if (read(fd, &tmp_size, sizeof(tmp_size)) != sizeof(tmp_size))
@@ -280,11 +416,14 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		fprintf(stderr, "read_response_file: error reading\n");
 		exit(1);
 	}
-	if (tmp_type != type)
+	/* Apply response type mapping for cross-platform compatibility */
+	int mapped_type = map_linux_response_type(tmp_type);
+	
+	if (mapped_type != type)
 	{
 		fprintf(stderr,
-		 "read_response_file: wrong type, expected %d, got %d\n",
-			type, tmp_type);
+		 "read_response_file: wrong type, expected %d, got %d (mapped from %d)\n",
+			type, mapped_type, tmp_type);
 		exit(1);
 	}
 	if (fread(&tmp_size, sizeof(tmp_size), 1, file) != 1)

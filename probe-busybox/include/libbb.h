@@ -481,6 +481,7 @@ extern void route_set_flags(char *flagstr, int flags);
 extern void peek_response(int fd, int *typep);
 extern void peek_response_file(FILE *file, int *typep);
 extern void read_response(int fd, int type, size_t *sizep, void *data);
+extern void set_response_tool(const char *tool);
 extern void read_response_file(FILE *file, int type, size_t *sizep,
 	void *data);
 extern void write_response(FILE *file, int type, size_t size, void *data);

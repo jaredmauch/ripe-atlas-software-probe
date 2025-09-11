@@ -66,41 +66,54 @@ def validate_json_result(line: str) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         return {"valid": False, "errors": [f"Invalid JSON: {e}"], "warnings": []}
     
-    # Check if result array exists
+    # Check if result field exists
     if "result" not in data:
         errors.append("Missing 'result' field")
         return {"valid": False, "errors": errors, "warnings": warnings}
     
     results = data["result"]
-    if not isinstance(results, list):
-        errors.append("'result' field must be an array")
+    
+    # Handle both array and object formats
+    if isinstance(results, list):
+        # Array format (used by evping, evhttpget, etc.)
+        result_list = results
+    elif isinstance(results, dict):
+        # Object format (used by evtdig, etc.)
+        result_list = [results]
+    else:
+        errors.append("'result' field must be an array or object")
         return {"valid": False, "errors": errors, "warnings": warnings}
     
-    # Validate each result in the array
-    for i, result in enumerate(results):
+    # Validate each result in the list
+    for i, result in enumerate(result_list):
         if not isinstance(result, dict):
             errors.append(f"result[{i}] must be an object")
             continue
         
-        # Check required fields
-        required_fields = ["af", "dst_addr", "src_addr"]
-        for field in required_fields:
-            if field not in result:
-                errors.append(f"result[{i}] missing required field: {field}")
+        # Check required fields based on tool type
+        # For evtdig: af, dst_addr, src_addr are in the main object
+        # For other tools: af, dst_addr, src_addr are in the main object
+        af = data.get("af")
+        dst_addr = data.get("dst_addr")
+        src_addr = data.get("src_addr")
         
         # Validate address family and addresses
-        if "af" in result and "dst_addr" in result and "src_addr" in result:
-            af_errors = validate_address_family(
-                result["af"], 
-                result["dst_addr"], 
-                result["src_addr"]
-            )
+        if af is not None and dst_addr is not None and src_addr is not None:
+            af_errors = validate_address_family(af, dst_addr, src_addr)
             errors.extend([f"result[{i}]: {err}" for err in af_errors])
+        else:
+            # Check if fields are missing
+            if af is None:
+                errors.append(f"result[{i}]: missing 'af' field")
+            if dst_addr is None:
+                errors.append(f"result[{i}]: missing 'dst_addr' field")
+            if src_addr is None:
+                errors.append(f"result[{i}]: missing 'src_addr' field")
         
         # Check for empty addresses (warning, not error)
-        if result.get("dst_addr") == "":
+        if dst_addr == "":
             warnings.append(f"result[{i}]: dst_addr is empty")
-        if result.get("src_addr") == "":
+        if src_addr == "":
             warnings.append(f"result[{i}]: src_addr is empty")
     
     return {

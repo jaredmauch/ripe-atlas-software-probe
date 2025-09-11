@@ -1043,6 +1043,9 @@ int evtdig_main(int argc, char **argv)
 	struct query_state *qry;
 
 	INIT_G();
+	
+	/* Set tool name for response type mapping */
+	set_response_tool("evtdig");
 
 	EventBase=event_base_new();
 	if (!EventBase)
