@@ -107,7 +107,7 @@ static void convert_linux_addrinfo_to_local(const struct linux_addrinfo *linux_a
 }
 
 /* Application-specific response type mapping based on calling application */
-static int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
+int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 	if (!app_tool) return linux_type;
 	
 	/* Map Linux response types to application-specific expected types */
