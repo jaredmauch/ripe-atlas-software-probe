@@ -254,23 +254,6 @@ static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 
 	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
 }
 
-/* Convert Linux timeval to FreeBSD timeval */
-static void convert_linux_timeval_to_local(const struct linux_timeval *linux_tv, struct timeval *local_tv) {
-	local_tv->tv_sec = linux_tv->tv_sec;
-	local_tv->tv_usec = linux_tv->tv_usec;
-}
-
-/* Convert Linux addrinfo to FreeBSD addrinfo */
-static void convert_linux_addrinfo_to_local(const struct linux_addrinfo *linux_ai, struct addrinfo *local_ai) {
-	local_ai->ai_flags = linux_ai->ai_flags;
-	local_ai->ai_family = linux_ai->ai_family;
-	local_ai->ai_socktype = linux_ai->ai_socktype;
-	local_ai->ai_protocol = linux_ai->ai_protocol;
-	local_ai->ai_addrlen = linux_ai->ai_addrlen;
-	local_ai->ai_canonname = linux_ai->ai_canonname;
-	local_ai->ai_addr = linux_ai->ai_addr;
-	local_ai->ai_next = (struct addrinfo *)linux_ai->ai_next;
-}
 
 /* Convert Linux sockaddr to local OS sockaddr */
 static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
