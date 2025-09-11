@@ -74,13 +74,15 @@ static int map_linux_response_type(int linux_type) {
 	/* Map based on tool-specific response type expectations */
 	if (strstr(current_tool, "traceroute") || strstr(current_tool, "evtraceroute")) {
 		switch (linux_type) {
-			case 5: return 4;  /* RESP_RCVDTTL -> RESP_PROTO for traceroute */
-			case 6: return 4;  /* RESP_RCVDTCLASS -> RESP_PROTO for traceroute */
-			case 7: return 4;  /* RESP_SENDTO -> RESP_PROTO for traceroute */
+			case 5: return 5;  /* RESP_RCVDTTL -> RESP_RCVDTTL (already correct) */
+			case 6: return 6;  /* RESP_RCVDTCLASS -> RESP_RCVDTCLASS (already correct) */
+			case 7: return 7;  /* RESP_SENDTO -> RESP_SENDTO (already correct) */
 			case 4: return 4;  /* RESP_PROTO -> RESP_PROTO (already correct) */
 			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
 			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
 			case 3: return 3;  /* RESP_SOCKNAME -> RESP_SOCKNAME */
+			case 8: return 8;  /* RESP_ADDRINFO -> RESP_ADDRINFO */
+			case 9: return 9;  /* RESP_ADDRINFO_SA -> RESP_ADDRINFO_SA */
 			default: return linux_type;
 		}
 	} else if (strstr(current_tool, "ping") || strstr(current_tool, "evping")) {
@@ -104,6 +106,65 @@ static int map_linux_response_type(int linux_type) {
 	}
 	
 	return linux_type; /* No mapping needed */
+}
+
+/* Convert Linux timeval to local OS timeval */
+static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_size,
+                                          void *local_data, size_t *local_size)
+{
+	const struct timeval *linux_tv = (const struct timeval *)linux_data;
+	struct timeval *local_tv = (struct timeval *)local_data;
+	
+	/* Clear the output buffer */
+	memset(local_data, 0, *local_size);
+	
+	/* Direct copy - timeval structure is generally compatible across platforms */
+	if (linux_size >= sizeof(struct timeval)) {
+		local_tv->tv_sec = linux_tv->tv_sec;
+		local_tv->tv_usec = linux_tv->tv_usec;
+		*local_size = sizeof(struct timeval);
+	} else {
+		/* Fallback: copy what we can */
+		memcpy(local_data, linux_data, linux_size);
+		*local_size = linux_size;
+	}
+}
+
+/* Convert Linux addrinfo to local OS addrinfo */
+static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
+                                           void *local_data, size_t *local_size)
+{
+	const struct addrinfo *linux_ai = (const struct addrinfo *)linux_data;
+	struct addrinfo *local_ai = (struct addrinfo *)local_data;
+	
+	/* Clear the output buffer */
+	memset(local_data, 0, *local_size);
+	
+	if (linux_size >= sizeof(struct addrinfo)) {
+		/* Copy basic fields that are generally compatible */
+		local_ai->ai_flags = linux_ai->ai_flags;
+		local_ai->ai_family = linux_ai->ai_family;
+		local_ai->ai_socktype = linux_ai->ai_socktype;
+		local_ai->ai_protocol = linux_ai->ai_protocol;
+		local_ai->ai_addrlen = linux_ai->ai_addrlen;
+		
+		/* Handle canonical name - copy if present */
+		if (linux_ai->ai_canonname) {
+			/* Note: This is a pointer, so we can't directly copy it */
+			/* The actual string data would need to be handled separately */
+			local_ai->ai_canonname = NULL; /* Will be set by caller if needed */
+		}
+		
+		/* ai_addr and ai_next are pointers - will be set by caller */
+		local_ai->ai_addr = NULL;
+		local_ai->ai_next = NULL;
+		
+		*local_size = sizeof(struct addrinfo);
+	} else {
+		/* Fallback: copy what we can */
+		memcpy(local_data, linux_data, linux_size);
+		*local_size = linux_size;
+	}
 }
 
 /* Convert Linux sockaddr to local OS sockaddr */
@@ -364,17 +425,35 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 		exit(1);
 	}
 	
-	/* Handle sockaddr types with platform conversion */
-	if ((type == RESP_DSTADDR || type == RESP_SOCKNAME || type == RESP_PEERNAME) &&
-	    tmp_size <= sizeof(temp_buffer)) {
+	/* Handle data structures that need platform conversion */
+	if (is_linux_datafile && tmp_size <= sizeof(temp_buffer)) {
 		/* Read into temporary buffer first */
 		if (read(fd, temp_buffer, tmp_size) != (ssize_t)tmp_size)
 		{
 			fprintf(stderr, "read_response: error reading\n");
 			exit(1);
 		}
-		/* Convert Linux format to local OS format */
-		convert_linux_sockaddr_to_local(temp_buffer, tmp_size, data, sizep);
+		
+		/* Apply appropriate conversion based on response type */
+		if (type == RESP_DSTADDR || type == RESP_SOCKNAME || type == RESP_PEERNAME || type == RESP_ADDRINFO_SA) {
+			/* Convert sockaddr structures */
+			convert_linux_sockaddr_to_local(temp_buffer, tmp_size, data, sizep);
+		} else if (type == RESP_TIMEOFDAY) {
+			/* Convert timeval structures */
+			convert_linux_timeval_to_local(temp_buffer, tmp_size, data, sizep);
+		} else if (type == RESP_ADDRINFO) {
+			/* Convert addrinfo structures */
+			convert_linux_addrinfo_to_local(temp_buffer, tmp_size, data, sizep);
+		} else {
+			/* No conversion needed - direct copy */
+			if (tmp_size > *sizep)
+			{
+				fprintf(stderr, "read_response: data bigger than buffer\n");
+				exit(1);
+			}
+			memcpy(data, temp_buffer, tmp_size);
+			*sizep = tmp_size;
+		}
 	} else {
 		/* Regular data, read directly */
 		if (tmp_size > *sizep)
@@ -434,9 +513,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		exit(1);
 	}
 	
-	/* Handle sockaddr types with platform conversion */
-	if ((type == RESP_DSTADDR || type == RESP_SOCKNAME || type == RESP_PEERNAME) &&
-	    tmp_size <= sizeof(temp_buffer)) {
+	/* Handle data structures that need platform conversion */
+	if (is_linux_datafile && tmp_size <= sizeof(temp_buffer)) {
 		/* Read into temporary buffer first */
 		if (tmp_size != 0)
 		{
@@ -449,8 +527,28 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 				exit(1);
 			}
 		}
-		/* Convert Linux format to local OS format */
-		convert_linux_sockaddr_to_local(temp_buffer, tmp_size, data, sizep);
+		
+		/* Apply appropriate conversion based on response type */
+		if (type == RESP_DSTADDR || type == RESP_SOCKNAME || type == RESP_PEERNAME || type == RESP_ADDRINFO_SA) {
+			/* Convert sockaddr structures */
+			convert_linux_sockaddr_to_local(temp_buffer, tmp_size, data, sizep);
+		} else if (type == RESP_TIMEOFDAY) {
+			/* Convert timeval structures */
+			convert_linux_timeval_to_local(temp_buffer, tmp_size, data, sizep);
+		} else if (type == RESP_ADDRINFO) {
+			/* Convert addrinfo structures */
+			convert_linux_addrinfo_to_local(temp_buffer, tmp_size, data, sizep);
+		} else {
+			/* No conversion needed - direct copy */
+			if (tmp_size > *sizep)
+			{
+				fprintf(stderr,
+					"read_response_file: data bigger than buffer\n");
+				exit(1);
+			}
+			memcpy(data, temp_buffer, tmp_size);
+			*sizep = tmp_size;
+		}
 	} else {
 		/* Regular data, read directly */
 		if (tmp_size > *sizep)
