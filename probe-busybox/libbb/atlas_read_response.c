@@ -105,37 +105,46 @@ static int check_and_init_json(FILE *file)
 	fseek(file, pos, SEEK_SET);
 	
 	if (is_json) {
-		/* We need to find the actual filename being used */
-		/* For now, we'll try to detect based on the current working directory */
-		/* This is a limitation - we need the filename to initialize JSON */
-		const char *test_files[] = {
-			"testsuite/evhttpget-data/evhttpget-4.json",
-			"testsuite/evhttpget-data/evhttpget-6.json",
-			"testsuite/evhttpget-data/evhttpget-1.json",
-			"testsuite/evhttpget-data/evhttpget-A42.json",
-			"testsuite/evhttpget-data/evhttpget-user.json",
+		/* Try to find JSON files in the testsuite directory */
+		/* We'll scan for common JSON test files */
+		const char *test_dirs[] = {
+			"probe-busybox/testsuite/evhttpget-data/",
+			"probe-busybox/testsuite/evntp-data/",
+			"probe-busybox/testsuite/evping-data/",
+			"probe-busybox/testsuite/evsslgetcert-data/",
+			"probe-busybox/testsuite/evtdig-data/",
+			"probe-busybox/testsuite/evtraceroute-data/",
 			NULL
 		};
 		
-		int i;
-		for (i = 0; test_files[i]; i++) {
-			if (json_response_init(test_files[i]) == 0) {
-				using_json = 1;
-				fprintf(stderr, "DEBUG: JSON initialized with %s\n", test_files[i]);
-				fflush(stderr);
-				return 1;
+		const char *test_files[] = {
+			"evhttpget-4.json", "evhttpget-6.json", "evhttpget-1.json",
+			"evntp-4.json", "evntp-6.json",
+			"evping-4.json", "evping-6.json",
+			"evsslgetcert-4.json", "evsslgetcert-6.json",
+			"evtdig-4.json", "evtdig-6.json",
+			"evtraceroute-4.json", "evtraceroute-6.json",
+			NULL
+		};
+		
+		int i, j;
+		char full_path[512];
+		
+		for (i = 0; test_dirs[i]; i++) {
+			for (j = 0; test_files[j]; j++) {
+				snprintf(full_path, sizeof(full_path), "%s%s", test_dirs[i], test_files[j]);
+				if (json_response_init(full_path) == 0) {
+					using_json = 1;
+					fprintf(stderr, "DEBUG: JSON initialized with %s\n", full_path);
+					fflush(stderr);
+					return 1;
+				}
 			}
 		}
 		fprintf(stderr, "DEBUG: JSON detection failed - no matching file found\n");
 		fflush(stderr);
 	}
 	
-	return 0;
-}
-#else
-/* Stub function when JSON support is not available */
-static int check_and_init_json(FILE *file)
-{
 	return 0;
 }
 #endif
