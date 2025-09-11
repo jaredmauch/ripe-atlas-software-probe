@@ -2598,7 +2598,9 @@ static bool argProcess (int argc, char *argv[], struct query_state *qry )
 	if(qry->opt_v6_only  == 0)
 	{
 		qry->opt_v4_only = 1;
-		qry->opt_AF = AF_INET;
+		// Only set opt_AF to AF_INET if it wasn't already set by -6 flag
+		if(qry->opt_AF == AF_UNSPEC)
+			qry->opt_AF = AF_INET;
 	}
 
 #if ENABLE_FEATURE_EVTDIG_TLS
