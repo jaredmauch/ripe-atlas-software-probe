@@ -75,6 +75,8 @@ static int map_linux_response_type(int linux_type) {
 	if (strstr(current_tool, "traceroute") || strstr(current_tool, "evtraceroute")) {
 		switch (linux_type) {
 			case 5: return 4;  /* RESP_RCVDTTL -> RESP_PROTO for traceroute */
+			case 6: return 4;  /* RESP_RCVDTCLASS -> RESP_PROTO for traceroute */
+			case 7: return 4;  /* RESP_SENDTO -> RESP_PROTO for traceroute */
 			case 4: return 4;  /* RESP_PROTO -> RESP_PROTO (already correct) */
 			case 1: return 1;  /* RESP_PACKET -> RESP_PACKET */
 			case 2: return 2;  /* RESP_PEERNAME -> RESP_PEERNAME */
