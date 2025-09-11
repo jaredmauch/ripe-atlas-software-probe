@@ -12,6 +12,7 @@ static json_object *json_responses = NULL;
 static int json_response_index = 0;
 static int json_got_type = 0;
 static int json_stored_type = 0;
+static int json_fd = -1;
 
 /* Convert JSON address data to sockaddr structure */
 static int json_to_sockaddr(json_object *data, struct sockaddr *sa, socklen_t *salen)

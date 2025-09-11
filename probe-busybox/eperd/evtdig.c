@@ -4012,8 +4012,7 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 		}
 		JS(dst_addr, addrstr);
 		JS(dst_port, qry->port_as_char);
-		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
-			af_to_string(qry->ressent->ai_family));
+		JS(af, af_to_string(qry->ressent->ai_family));
 	}
 	else if(qry->dst_ai_family && qry->server_name)
 	{
@@ -4022,14 +4021,12 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 		}
 		JS(dst_addr , qry->dst_addr_str);
 		JS(dst_port, qry->port_as_char);
-		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
-			af_to_string(qry->dst_ai_family));
+		JS(af, af_to_string(qry->dst_ai_family));
 	}
 	else if(qry->server_name) {
 		JS(dst_name,  qry->server_name);
 		// When using fuzzing files, use opt_AF to determine address family
-		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
-			af_to_string(qry->opt_AF));
+		JS(af, af_to_string(qry->opt_AF));
 	}
 	
 	if(qry->loc_sin6.sin6_family) {

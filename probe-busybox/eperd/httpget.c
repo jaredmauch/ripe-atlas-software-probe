@@ -16,6 +16,7 @@
 #include "eperd.h"
 #include "tcputil.h"
 #include "atlas_path.h"
+#include "portable_json.h"
 
 #define SAFE_PREFIX_IN_REL ATLAS_DATA_OUT_REL
 #define SAFE_PREFIX_OUT_REL ATLAS_DATA_NEW_REL
@@ -900,10 +901,10 @@ static void report(struct hgstate *state)
 	if (!state->dnserr)
 	{
 		snprintf(line, sizeof(line), 
-			DBQ(method) ":" DBQ(%s) ", " DBQ(af) ": %d",
+			DBQ(method) ":" DBQ(%s) ", " DBQ(af) ":" DBQ(%s),
 			state->do_get ? "GET" : state->do_head ? "HEAD" :
 			"POST", 
-			state->sin6.sin6_family == AF_INET6 ? 6 : 4);
+			af_to_string(state->sin6.sin6_family));
 		add_str(state, line);
 
 		if (state->read_truncated)

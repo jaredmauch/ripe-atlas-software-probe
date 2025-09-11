@@ -30,10 +30,12 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	struct sockaddr_in *local_sin = (struct sockaddr_in *)local_data;
 	struct sockaddr_in6 *local_sin6 = (struct sockaddr_in6 *)local_data;
 	
+#ifdef __DEBUG__
 	fprintf(stderr, "DEBUG: convert_linux_sockaddr_to_local: linux_size=%zu, local_size=%zu\n", 
 		linux_size, *local_size);
 	fprintf(stderr, "DEBUG: Linux sin_family=%d, sin6_family=%d\n", 
 		linux_sin->sin_family, linux_sin6->sin6_family);
+#endif /* __DEBUG __ */
 	
 	/* Clear the output buffer */
 	memset(local_data, 0, *local_size);
