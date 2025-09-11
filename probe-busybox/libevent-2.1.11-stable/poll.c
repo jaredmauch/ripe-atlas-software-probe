@@ -214,7 +214,7 @@ poll_dispatch(struct event_base *base, struct timeval *tv)
 }
 
 static int
-poll_add(struct event_base *base, int fd, short old, short events, void *idx_)
+poll_add(struct event_base *base, int fd, short old __attribute__((unused)), short events, void *idx_)
 {
 	struct pollop *pop = base->evbase;
 	struct pollfd *pfd = NULL;
@@ -275,7 +275,7 @@ poll_add(struct event_base *base, int fd, short old, short events, void *idx_)
  */
 
 static int
-poll_del(struct event_base *base, int fd, short old, short events, void *idx_)
+poll_del(struct event_base *base, int fd __attribute__((unused)), short old __attribute__((unused)), short events, void *idx_)
 {
 	struct pollop *pop = base->evbase;
 	struct pollfd *pfd = NULL;

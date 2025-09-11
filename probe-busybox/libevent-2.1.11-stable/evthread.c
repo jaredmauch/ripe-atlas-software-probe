@@ -231,7 +231,7 @@ debug_lock_free(void *lock_, unsigned locktype)
 }
 
 static void
-evthread_debug_lock_mark_locked(unsigned mode, struct debug_lock *lock)
+evthread_debug_lock_mark_locked(unsigned mode __attribute__((unused)), struct debug_lock *lock)
 {
 	EVUTIL_ASSERT(DEBUG_LOCK_SIG == lock->signature);
 	++lock->count;

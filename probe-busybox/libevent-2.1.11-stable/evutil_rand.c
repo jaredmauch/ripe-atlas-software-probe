@@ -58,7 +58,7 @@ evutil_secure_rng_init(void)
 }
 #ifndef EVENT__DISABLE_THREAD_SUPPORT
 int
-evutil_secure_rng_global_setup_locks_(const int enable_locks)
+evutil_secure_rng_global_setup_locks_(const int enable_locks __attribute__((unused)))
 {
 	return 0;
 }

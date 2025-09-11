@@ -143,7 +143,7 @@ evutil_open_closeonexec_(const char *pathname, int flags, unsigned mode)
  */
 int
 evutil_read_file_(const char *filename, char **content_out, size_t *len_out,
-    int is_binary)
+    int is_binary __attribute__((unused)))
 {
 	int fd, r;
 	struct stat st;
@@ -210,7 +210,7 @@ evutil_socketpair(int family, int type, int protocol, evutil_socket_t fd[2])
 
 int
 evutil_ersatz_socketpair_(int family, int type, int protocol,
-    evutil_socket_t fd[2])
+    evutil_socket_t fd[])
 {
 	/* This code is originally from Tor.  Used with permission. */
 
@@ -1842,7 +1842,7 @@ evutil_free_sock_err_globals(void)
 
 #ifndef EVENT__DISABLE_THREAD_SUPPORT
 int
-evutil_global_setup_locks_(const int enable_locks)
+evutil_global_setup_locks_(const int enable_locks __attribute__((unused)))
 {
 	return 0;
 }

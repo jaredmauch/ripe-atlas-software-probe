@@ -124,6 +124,7 @@ event_sock_err(int eval, evutil_socket_t sock, const char *fmt, ...)
 {
 	va_list ap;
 	int err = evutil_socket_geterror(sock);
+	(void)sock; /* Suppress unused parameter warning */
 
 	va_start(ap, fmt);
 	event_logv_(EVENT_LOG_ERR, evutil_socket_error_to_string(err), fmt, ap);
@@ -136,6 +137,7 @@ event_sock_warn(evutil_socket_t sock, const char *fmt, ...)
 {
 	va_list ap;
 	int err = evutil_socket_geterror(sock);
+	(void)sock; /* Suppress unused parameter warning */
 
 	va_start(ap, fmt);
 	event_logv_(EVENT_LOG_WARN, evutil_socket_error_to_string(err), fmt, ap);

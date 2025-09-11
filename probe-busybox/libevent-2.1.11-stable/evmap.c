@@ -675,16 +675,16 @@ delete_all_in_dlist(struct event_dlist *dlist)
 
 /* Helper for evmap_delete_all_: delete every event pending on an fd. */
 static int
-evmap_io_delete_all_iter_fn(struct event_base *base, evutil_socket_t fd,
-    struct evmap_io *io_info, void *arg)
+evmap_io_delete_all_iter_fn(struct event_base *base __attribute__((unused)), evutil_socket_t fd __attribute__((unused)),
+    struct evmap_io *io_info, void *arg __attribute__((unused)))
 {
 	return delete_all_in_dlist(&io_info->events);
 }
 
 /* Helper for evmap_delete_all_: delete every event pending on a signal. */
 static int
-evmap_signal_delete_all_iter_fn(struct event_base *base, int signum,
-    struct evmap_signal *sig_info, void *arg)
+evmap_signal_delete_all_iter_fn(struct event_base *base __attribute__((unused)), int signum __attribute__((unused)),
+    struct evmap_signal *sig_info, void *arg __attribute__((unused)))
 {
 	return delete_all_in_dlist(&sig_info->events);
 }
@@ -734,7 +734,7 @@ event_change_get_fdinfo(struct event_base *base,
 static int
 event_changelist_assert_ok_foreach_iter_fn(
 	struct event_base *base,
-	evutil_socket_t fd, struct evmap_io *io, void *arg)
+	evutil_socket_t fd, struct evmap_io *io, void *arg __attribute__((unused)))
 {
 	struct event_changelist *changelist = &base->changelist;
 	struct event_changelist_fdinfo *f;
@@ -949,8 +949,8 @@ event_changelist_del_(struct event_base *base, evutil_socket_t fd, short old, sh
  * given fd are set up correctly, and that the nread and nwrite counts on that
  * fd are correct. */
 static int
-evmap_io_check_integrity_fn(struct event_base *base, evutil_socket_t fd,
-    struct evmap_io *io_info, void *arg)
+evmap_io_check_integrity_fn(struct event_base *base __attribute__((unused)), evutil_socket_t fd,
+    struct evmap_io *io_info, void *arg __attribute__((unused)))
 {
 	struct event *ev;
 	int n_read = 0, n_write = 0, n_close = 0;
@@ -982,8 +982,8 @@ evmap_io_check_integrity_fn(struct event_base *base, evutil_socket_t fd,
 /* Helper for evmap_check_integrity_: verify that all of the events pending
  * on given signal are set up correctly. */
 static int
-evmap_signal_check_integrity_fn(struct event_base *base,
-    int signum, struct evmap_signal *sig_info, void *arg)
+evmap_signal_check_integrity_fn(struct event_base *base __attribute__((unused)),
+    int signum, struct evmap_signal *sig_info, void *arg __attribute__((unused)))
 {
 	struct event *ev;
 	/* First, make sure the list itself isn't corrupt. */
@@ -1018,7 +1018,7 @@ struct evmap_foreach_event_helper {
 /* Helper for evmap_foreach_event_: calls a provided function on every event
  * pending on a given fd.  */
 static int
-evmap_io_foreach_event_fn(struct event_base *base, evutil_socket_t fd,
+evmap_io_foreach_event_fn(struct event_base *base, evutil_socket_t fd __attribute__((unused)),
     struct evmap_io *io_info, void *arg)
 {
 	struct evmap_foreach_event_helper *h = arg;
@@ -1034,7 +1034,7 @@ evmap_io_foreach_event_fn(struct event_base *base, evutil_socket_t fd,
 /* Helper for evmap_foreach_event_: calls a provided function on every event
  * pending on a given signal.  */
 static int
-evmap_signal_foreach_event_fn(struct event_base *base, int signum,
+evmap_signal_foreach_event_fn(struct event_base *base, int signum __attribute__((unused)),
     struct evmap_signal *sig_info, void *arg)
 {
 	struct event *ev;

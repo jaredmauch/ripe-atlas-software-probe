@@ -130,7 +130,7 @@ evsig_set_base_(struct event_base *base)
 
 /* Callback for when the signal handler write a byte to our signaling socket */
 static void
-evsig_cb(evutil_socket_t fd, short what, void *arg)
+evsig_cb(evutil_socket_t fd, short what __attribute__((unused)), void *arg)
 {
 	static char signals[1024];
 	ev_ssize_t n;
@@ -277,7 +277,7 @@ evsig_set_handler_(struct event_base *base,
 }
 
 static int
-evsig_add(struct event_base *base, evutil_socket_t evsignal, short old, short events, void *p)
+evsig_add(struct event_base *base, evutil_socket_t evsignal, short old __attribute__((unused)), short events __attribute__((unused)), void *p)
 {
 	struct evsig_info *sig = &base->sig;
 	(void)p;
@@ -293,7 +293,7 @@ evsig_add(struct event_base *base, evutil_socket_t evsignal, short old, short ev
 		    "the most recently added signal or the most recent "
 		    "event_base_loop() call gets preference; do "
 		    "not rely on this behavior in future Libevent versions.",
-		    base, evsig_base, base->evsel->name);
+		    (void *)base, (void *)evsig_base, base->evsel->name);
 	}
 	evsig_base = base;
 	evsig_base_n_signals_added = ++sig->ev_n_signals_added;
@@ -360,7 +360,7 @@ evsig_restore_handler_(struct event_base *base, int evsignal)
 }
 
 static int
-evsig_del(struct event_base *base, evutil_socket_t evsignal, short old, short events, void *p)
+evsig_del(struct event_base *base, evutil_socket_t evsignal, short old __attribute__((unused)), short events __attribute__((unused)), void *p __attribute__((unused)))
 {
 	EVUTIL_ASSERT(evsignal >= 0 && evsignal < NSIG);
 

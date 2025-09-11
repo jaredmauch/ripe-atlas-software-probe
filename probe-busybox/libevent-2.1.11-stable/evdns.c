@@ -661,7 +661,7 @@ request_finished(struct request *const req, struct request **head, int free_hand
 	if (head)
 		evdns_request_remove(req, head);
 
-	log(EVDNS_LOG_DEBUG, "Removing timeout for request %p", req);
+	log(EVDNS_LOG_DEBUG, "Removing timeout for request %p", (void *)req);
 	if (was_inflight) {
 		evtimer_del(&req->timeout_event);
 		base->global_requests_inflight--;
@@ -1321,12 +1321,12 @@ err:
 
 
 void
-evdns_set_transaction_id_fn(ev_uint16_t (*fn)(void))
+evdns_set_transaction_id_fn(ev_uint16_t (*fn)(void) __attribute__((unused)))
 {
 }
 
 void
-evdns_set_random_bytes_fn(void (*fn)(char *, size_t))
+evdns_set_random_bytes_fn(void (*fn)(char *, size_t) __attribute__((unused)))
 {
 }
 
@@ -2291,11 +2291,11 @@ evdns_request_transmit(struct request *req) {
 	default:
 		/* all ok */
 		log(EVDNS_LOG_DEBUG,
-		    "Setting timeout for request %p, sent to nameserver %p", req, req->ns);
+		    "Setting timeout for request %p, sent to nameserver %p", (void *)req, (void *)req->ns);
 		if (evtimer_add(&req->timeout_event, &req->base->global_timeout) < 0) {
 			log(EVDNS_LOG_WARN,
 		      "Error from libevent when adding timer for request %p",
-			    req);
+			    (void *)req);
 			/* ???? Do more? */
 		}
 		req->tx_count++;
@@ -2588,7 +2588,7 @@ evdns_nameserver_add_impl_(struct evdns_base *base, const struct sockaddr *addre
 	}
 
 	log(EVDNS_LOG_DEBUG, "Added nameserver %s as %p",
-	    evutil_format_sockaddr_port_(address, addrbuf, sizeof(addrbuf)), ns);
+	    evutil_format_sockaddr_port_(address, addrbuf, sizeof(addrbuf)), (void *)ns);
 
 	/* insert this nameserver into the list of them */
 	if (!base->server_head) {
@@ -2692,7 +2692,7 @@ evdns_nameserver_ip_add(const char *ip_as_string) {
 
 int
 evdns_base_nameserver_sockaddr_add(struct evdns_base *base,
-    const struct sockaddr *sa, ev_socklen_t len, unsigned flags)
+    const struct sockaddr *sa, ev_socklen_t len, unsigned flags __attribute__((unused)))
 {
 	int res;
 	EVUTIL_ASSERT(base);
@@ -3585,7 +3585,7 @@ evdns_base_set_option_impl(struct evdns_base *base,
 }
 
 int
-evdns_set_option(const char *option, const char *val, int flags)
+evdns_set_option(const char *option, const char *val, int flags __attribute__((unused)))
 {
 	if (!current_base)
 		current_base = evdns_base_new(NULL, 0);
@@ -4435,7 +4435,7 @@ add_cname_to_reply(struct evdns_getaddrinfo_request *data,
  * along the answer we got, and cancel the other request.
  */
 static void
-evdns_getaddrinfo_timeout_cb(evutil_socket_t fd, short what, void *ptr)
+evdns_getaddrinfo_timeout_cb(evutil_socket_t fd __attribute__((unused)), short what __attribute__((unused)), void *ptr)
 {
 	int v4_timedout = 0, v6_timedout = 0;
 	struct evdns_getaddrinfo_request *data = ptr;
@@ -4502,7 +4502,7 @@ evdns_result_is_answer(int result)
 
 static void
 evdns_getaddrinfo_gotresolve(int result, char type, int count,
-    int ttl, void *addresses, void *arg)
+    int ttl __attribute__((unused)), void *addresses, void *arg)
 {
 	int i;
 	struct getaddrinfo_subrequest *req = arg;
@@ -4838,7 +4838,7 @@ evdns_getaddrinfo(struct evdns_base *dns_base,
 
 	if (hints.ai_family != PF_INET6) {
 		log(EVDNS_LOG_DEBUG, "Sending request for %s on ipv4 as %p",
-		    nodename, &data->ipv4_request);
+		    nodename, (void *)&data->ipv4_request);
 
 		data->ipv4_request.r = evdns_base_resolve_ipv4(dns_base,
 		    nodename, 0, evdns_getaddrinfo_gotresolve,
@@ -4849,7 +4849,7 @@ evdns_getaddrinfo(struct evdns_base *dns_base,
 	}
 	if (hints.ai_family != PF_INET) {
 		log(EVDNS_LOG_DEBUG, "Sending request for %s on ipv6 as %p",
-		    nodename, &data->ipv6_request);
+		    nodename, (void *)&data->ipv6_request);
 
 		data->ipv6_request.r = evdns_base_resolve_ipv6(dns_base,
 		    nodename, 0, evdns_getaddrinfo_gotresolve,

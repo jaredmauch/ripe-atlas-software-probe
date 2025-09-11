@@ -391,7 +391,7 @@ evconnlistener_set_error_cb(struct evconnlistener *lev,
 }
 
 static void
-listener_read_cb(evutil_socket_t fd, short what, void *p)
+listener_read_cb(evutil_socket_t fd, short what __attribute__((unused)), void *p)
 {
 	struct evconnlistener *lev = p;
 	int err;

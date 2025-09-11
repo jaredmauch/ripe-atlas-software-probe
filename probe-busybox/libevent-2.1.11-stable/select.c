@@ -249,7 +249,7 @@ select_resize(struct selectop *sop, int fdsz)
 
 
 static int
-select_add(struct event_base *base, int fd, short old, short events, void *p)
+select_add(struct event_base *base, int fd, short old __attribute__((unused)), short events, void *p)
 {
 	struct selectop *sop = base->evbase;
 	(void) p;
@@ -296,7 +296,7 @@ select_add(struct event_base *base, int fd, short old, short events, void *p)
  */
 
 static int
-select_del(struct event_base *base, int fd, short old, short events, void *p)
+select_del(struct event_base *base, int fd, short old __attribute__((unused)), short events, void *p)
 {
 	struct selectop *sop = base->evbase;
 	(void)p;

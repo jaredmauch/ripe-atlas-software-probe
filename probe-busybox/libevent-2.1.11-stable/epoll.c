@@ -264,7 +264,7 @@ epoll_op_to_string(int op)
 	change_to_string(ch->close_change)
 
 static int
-epoll_apply_one_change(struct event_base *base,
+epoll_apply_one_change(struct event_base *base __attribute__((unused)),
     struct epollop *epollop,
     const struct event_change *ch)
 {
@@ -373,7 +373,7 @@ epoll_apply_changes(struct event_base *base)
 
 static int
 epoll_nochangelist_add(struct event_base *base, evutil_socket_t fd,
-    short old, short events, void *p)
+    short old, short events, void *p __attribute__((unused)))
 {
 	struct event_change ch;
 	ch.fd = fd;
@@ -394,7 +394,7 @@ epoll_nochangelist_add(struct event_base *base, evutil_socket_t fd,
 
 static int
 epoll_nochangelist_del(struct event_base *base, evutil_socket_t fd,
-    short old, short events, void *p)
+    short old, short events, void *p __attribute__((unused)))
 {
 	struct event_change ch;
 	ch.fd = fd;
