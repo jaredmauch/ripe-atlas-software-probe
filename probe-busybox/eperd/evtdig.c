@@ -3927,6 +3927,14 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 	void *ptr = NULL;
 	FILE *fh; 
 	char addrstr[INET6_ADDRSTRLEN];
+	u_int32_t serial;
+	int iMax ;
+	int flagAnswer = 0;
+	int data_len, len;
+	int write_out = FALSE;
+	unsigned offset;
+	unsigned char *name1= NULL, *name2= NULL;
+	int lts;
 
 	// Initialize fh based on output destination
 	if (qry->out_filename) {
@@ -3938,15 +3946,8 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 	} else {
 		fh = stdout;
 	}
-	u_int32_t serial;
-	int iMax ;
-	int flagAnswer = 0;
-	int data_len, len;
-	int write_out = FALSE;
-	unsigned offset;
-	unsigned char *name1= NULL, *name2= NULL;
 
-	int lts = get_timesync();
+	lts = get_timesync();
 
 	if(! qry->result.size){
 		buf_init(&qry->result, -1);
@@ -4012,7 +4013,7 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 		}
 		JS(dst_addr, addrstr);
 		JS(dst_port, qry->port_as_char);
-		JS(af, af_to_string(qry->ressent->ai_family));
+		JD(af, qry->ressent->ai_family == AF_INET6 ? 6 : 4);
 	}
 	else if(qry->dst_ai_family && qry->server_name)
 	{
@@ -4021,12 +4022,12 @@ void printReply(struct query_state *qry, size_t wire_size, unsigned char *result
 		}
 		JS(dst_addr , qry->dst_addr_str);
 		JS(dst_port, qry->port_as_char);
-		JS(af, af_to_string(qry->dst_ai_family));
+		JD(af, qry->dst_ai_family == AF_INET6 ? 6 : 4);
 	}
 	else if(qry->server_name) {
 		JS(dst_name,  qry->server_name);
 		// When using fuzzing files, use opt_AF to determine address family
-		JS(af, af_to_string(qry->opt_AF));
+		JD(af, qry->opt_AF == AF_INET6 ? 6 : 4);
 	}
 	
 	if(qry->loc_sin6.sin6_family) {

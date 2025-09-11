@@ -618,8 +618,8 @@ static void fmt_ssl_host(struct tls_qry *qry, bool is_err)
 			if(strlen(addrstr))
 				JS(src_addr, addrstr);
 		}
-		fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
-			af_to_string(qry->addr_curr->ai_family));
+		fprintf(fh, ", " DBQ(af) ":%d",
+			qry->addr_curr->ai_family == AF_INET6 ? 6 : 4);
 	}
 	else if (qry->ui->host) {
 		JS_NC(dst_name, qry->ui->host);

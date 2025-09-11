@@ -341,8 +341,8 @@ static void report(struct pingstate *state)
 		fprintf(fh, ", " DBQ(ttr) ":%f", state->ttr);
 	}
 
-	fprintf(fh, ", " DBQ(af) ":" DBQ(%s),
-		af_to_string(state->af));
+	fprintf(fh, ", " DBQ(af) ":%d",
+		state->af == AF_INET6 ? 6 : 4);
 
 	if (!state->no_dst)
 	{

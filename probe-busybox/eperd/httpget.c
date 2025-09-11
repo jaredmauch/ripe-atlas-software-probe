@@ -901,10 +901,10 @@ static void report(struct hgstate *state)
 	if (!state->dnserr)
 	{
 		snprintf(line, sizeof(line), 
-			DBQ(method) ":" DBQ(%s) ", " DBQ(af) ":" DBQ(%s),
+			DBQ(method) ":" DBQ(%s) ", " DBQ(af) ":%d",
 			state->do_get ? "GET" : state->do_head ? "HEAD" :
 			"POST", 
-			af_to_string(state->sin6.sin6_family));
+			state->sin6.sin6_family == AF_INET6 ? 6 : 4);
 		add_str(state, line);
 
 		if (state->read_truncated)
