@@ -113,18 +113,11 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 	/* Map Linux response types to application-specific expected types */
 	if (strcmp(app_tool, "evtraceroute") == 0) {
 		/* evtraceroute expects: 4, 1, 2, 5, 6, 7, 3, 8, 9 */
-		/* Map Linux types to evtraceroute expected sequence */
-		switch (linux_type) {
-			case 8: return 8; /* RESP_ADDRINFO - matches */
-			case 9: return 9; /* RESP_ADDRINFO_SA - matches */
-			case 3: return 3; /* RESP_SOCKNAME - matches */
-			case 7: return 7; /* RESP_SENDTO - matches */
-			case 4: return 4; /* RESP_PROTO - matches */
-			case 1: return 1; /* RESP_PACKET - matches */
-			case 5: return 2; /* RESP_RCVDTTL -> RESP_PEERNAME (evtraceroute expects PEERNAME here) */
-			case 6: return 5; /* RESP_RCVDTCLASS -> RESP_RCVDTTL */
-			default: return linux_type;
-		}
+		/* Linux datafile has: 8, 9, 3, 7, 4, 1, 5, 6, 7, ... */
+		/* This datafile appears to be from a different application */
+		/* For now, just pass through the types and let the application handle it */
+		fprintf(stderr, "DEBUG: evtraceroute detected but datafile sequence doesn't match expected sequence\n");
+		return linux_type;
 	} else if (strcmp(app_tool, "evtdig") == 0) {
 		/* evtdig expects: 1, 2, 8, 3, 8, 9 */
 		switch (linux_type) {
