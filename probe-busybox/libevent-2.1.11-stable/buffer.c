@@ -2469,18 +2469,24 @@ evbuffer_write_sendfile(struct evbuffer *buffer, evutil_socket_t dest_fd,
     ev_ssize_t howmuch)
 {
 	struct evbuffer_chain *chain = buffer->first;
-	
-	(void)howmuch; /* unused parameter */
-	struct evbuffer_chain_file_segment *info =
-	    EVBUFFER_CHAIN_EXTRA(struct evbuffer_chain_file_segment,
-		chain);
-	const int source_fd = info->segment->fd;
+	struct evbuffer_chain_file_segment *info;
+	int source_fd;
 #if defined(SENDFILE_IS_MACOSX) || defined(SENDFILE_IS_FREEBSD)
 	int res;
-	ev_off_t len = chain->off;
+	ev_off_t len;
 #elif defined(SENDFILE_IS_LINUX) || defined(SENDFILE_IS_SOLARIS)
 	ev_ssize_t res;
-	off_t offset = chain->misalign;
+	off_t offset;
+#endif
+	
+	(void)howmuch; /* unused parameter */
+	info = EVBUFFER_CHAIN_EXTRA(struct evbuffer_chain_file_segment,
+		chain);
+	source_fd = info->segment->fd;
+#if defined(SENDFILE_IS_MACOSX) || defined(SENDFILE_IS_FREEBSD)
+	len = chain->off;
+#elif defined(SENDFILE_IS_LINUX) || defined(SENDFILE_IS_SOLARIS)
+	offset = chain->misalign;
 #endif
 
 	ASSERT_EVBUFFER_LOCKED(buffer);

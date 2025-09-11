@@ -131,9 +131,10 @@ bufferevent_socket_outbuf_cb(struct evbuffer *buf,
     void *arg)
 {
 	struct bufferevent *bufev = arg;
+	struct bufferevent_private *bufev_p;
 	
 	(void)buf; /* unused parameter */
-	struct bufferevent_private *bufev_p = BEV_UPCAST(bufev);
+	bufev_p = BEV_UPCAST(bufev);
 
 	if (cbinfo->n_added &&
 	    (bufev->enabled & EV_WRITE) &&

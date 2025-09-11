@@ -423,9 +423,10 @@ bufferevent_filtered_outbuf_cb(struct evbuffer *buf,
     const struct evbuffer_cb_info *cbinfo, void *arg)
 {
 	struct bufferevent_filtered *bevf = arg;
+	struct bufferevent *bev;
 	
 	(void)buf; /* unused parameter */
-	struct bufferevent *bev = downcast(bevf);
+	bev = downcast(bevf);
 
 	if (cbinfo->n_added) {
 		int processed_any = 0;
@@ -487,11 +488,12 @@ bufferevent_filtered_inbuf_cb(struct evbuffer *buf,
     const struct evbuffer_cb_info *cbinfo, void *arg)
 {
 	struct bufferevent_filtered *bevf = arg;
+	enum bufferevent_flush_mode state;
+	struct bufferevent *bev;
 	
 	(void)buf; /* unused parameter */
 	(void)cbinfo; /* unused parameter */
-	enum bufferevent_flush_mode state;
-	struct bufferevent *bev = downcast(bevf);
+	bev = downcast(bevf);
 
 	BEV_LOCK(bev);
 
@@ -534,11 +536,16 @@ be_filter_readcb(struct bufferevent *underlying, void *me_)
 static void
 be_filter_writecb(struct bufferevent *underlying, void *me_)
 {
+	struct bufferevent_filtered *bevf;
+	struct bufferevent *bev;
+	struct bufferevent_private *bufev_private;
+	int processed_any;
+	
 	(void)underlying; /* unused parameter */
-	struct bufferevent_filtered *bevf = me_;
-	struct bufferevent *bev = downcast(bevf);
-	struct bufferevent_private *bufev_private = BEV_UPCAST(bev);
-	int processed_any = 0;
+	bevf = me_;
+	bev = downcast(bevf);
+	bufev_private = BEV_UPCAST(bev);
+	processed_any = 0;
 
 	BEV_LOCK(bev);
 
@@ -557,10 +564,14 @@ be_filter_writecb(struct bufferevent *underlying, void *me_)
 static void
 be_filter_eventcb(struct bufferevent *underlying, short what, void *me_)
 {
+	struct bufferevent_filtered *bevf;
+	struct bufferevent *bev;
+	struct bufferevent_private *bufev_private;
+	
 	(void)underlying; /* unused parameter */
-	struct bufferevent_filtered *bevf = me_;
-	struct bufferevent *bev = downcast(bevf);
-	struct bufferevent_private *bufev_private = BEV_UPCAST(bev);
+	bevf = me_;
+	bev = downcast(bevf);
+	bufev_private = BEV_UPCAST(bev);
 
 	BEV_LOCK(bev);
 

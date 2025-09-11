@@ -394,12 +394,14 @@ static void
 bev_refill_callback_(evutil_socket_t fd, short what, void *arg)
 {
 	unsigned tick;
+	struct timeval now;
+	struct bufferevent_private *bev;
+	int again;
 	
 	(void)fd; /* unused parameter */
 	(void)what; /* unused parameter */
-	struct timeval now;
-	struct bufferevent_private *bev = arg;
-	int again = 0;
+	bev = arg;
+	again = 0;
 	BEV_LOCK(&bev->bev);
 	if (!bev->rate_limiting || !bev->rate_limiting->cfg) {
 		BEV_UNLOCK(&bev->bev);
@@ -532,11 +534,11 @@ static void
 bev_group_refill_callback_(evutil_socket_t fd, short what, void *arg)
 {
 	struct bufferevent_rate_limit_group *g = arg;
+	unsigned tick;
+	struct timeval now;
 	
 	(void)fd; /* unused parameter */
 	(void)what; /* unused parameter */
-	unsigned tick;
-	struct timeval now;
 
 	event_base_gettimeofday_cached(event_get_base(&g->master_refill_event), &now);
 

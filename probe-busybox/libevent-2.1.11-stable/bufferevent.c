@@ -138,9 +138,9 @@ bufferevent_inbuf_wm_cb(struct evbuffer *buf,
     void *arg)
 {
 	struct bufferevent *bufev = arg;
+	size_t size;
 	
 	(void)cbinfo; /* unused parameter */
-	size_t size;
 
 	size = evbuffer_get_length(buf);
 
@@ -154,9 +154,10 @@ static void
 bufferevent_run_deferred_callbacks_locked(struct event_callback *cb, void *arg)
 {
 	struct bufferevent_private *bufev_private = arg;
+	struct bufferevent *bufev;
 	
 	(void)cb; /* unused parameter */
-	struct bufferevent *bufev = &bufev_private->bev;
+	bufev = &bufev_private->bev;
 
 	BEV_LOCK(bufev);
 	if ((bufev_private->eventcb_pending & BEV_EVENT_CONNECTED) &&
@@ -190,9 +191,10 @@ static void
 bufferevent_run_deferred_callbacks_unlocked(struct event_callback *cb, void *arg)
 {
 	struct bufferevent_private *bufev_private = arg;
+	struct bufferevent *bufev;
 	
 	(void)cb; /* unused parameter */
-	struct bufferevent *bufev = &bufev_private->bev;
+	bufev = &bufev_private->bev;
 
 	BEV_LOCK(bufev);
 #define UNLOCKED(stmt) \
@@ -752,13 +754,16 @@ bufferevent_decref_and_unlock_(struct bufferevent *bufev)
 static void
 bufferevent_finalize_cb_(struct event_callback *evcb, void *arg_)
 {
-	(void)evcb; /* unused parameter */
-	struct bufferevent *bufev = arg_;
+	struct bufferevent *bufev;
 	struct bufferevent *underlying;
-	struct bufferevent_private *bufev_private = BEV_UPCAST(bufev);
+	struct bufferevent_private *bufev_private;
+	
+	(void)evcb; /* unused parameter */
+	bufev = arg_;
+	underlying = bufferevent_get_underlying(bufev);
+	bufev_private = BEV_UPCAST(bufev);
 
 	BEV_LOCK(bufev);
-	underlying = bufferevent_get_underlying(bufev);
 
 	/* Clean up the shared info */
 	if (bufev->be_ops->destruct)
