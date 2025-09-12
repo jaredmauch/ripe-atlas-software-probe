@@ -218,12 +218,6 @@ static int detect_linux_datafile(int response_type) {
 	return 1; /* Always return true - all datafiles are Linux */
 }
 
-/* Map Linux response types to tool-specific types for cross-platform compatibility */
-static int map_linux_response_type(int linux_type) {
-	/* No mapping needed - maintain original response types */
-	return linux_type;
-}
-
 #ifndef __linux__
 /* Convert Linux timeval to local OS timeval - unused for now */
 #if 0
