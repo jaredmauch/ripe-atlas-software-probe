@@ -90,6 +90,17 @@ lcwd=$(pwd)
 PATH="$bindir:$PATH"
 export bindir   # some tests need to look at $bindir/.config
 
+# Check for core files and use unstripped binary if present
+BUSYBOX_BINARY="$bindir/busybox"
+if [ -f "$bindir/busybox_unstripped" ]; then
+    # Check if there are any core files in the current directory or bindir
+    # Look for actual core files, not git branch names
+    if find "$bindir" "$lcwd" -name "core" -o -name "core.*" -type f 2>/dev/null | grep -q .; then
+        echo "Core files detected, using unstripped busybox binary for better debugging"
+        BUSYBOX_BINARY="$bindir/busybox_unstripped"
+    fi
+fi
+
 if [ x"$VERBOSE" = x ]; then
 	export VERBOSE=
 fi
@@ -101,7 +112,7 @@ fi
 
 implemented=$(
 	printf "busybox " # always implemented
-	"$bindir/busybox" 2>&1 |
+	"$BUSYBOX_BINARY" 2>&1 |
 	while read line; do
 		if [ x"$line" = x"Currently defined functions:" ]; then
 			xargs | sed 's/,//g'
@@ -128,7 +139,7 @@ for i in $implemented; do
 	# Note: if $LINKSDIR/applet exists, we do not overwrite it.
 	# Useful if one wants to run tests against a standard utility,
 	# not an applet.
-	ln -s "$bindir/busybox" "$LINKSDIR/$i" 2>/dev/null
+	ln -s "$BUSYBOX_BINARY" "$LINKSDIR/$i" 2>/dev/null
 done
 
 # Set up option flags so tests can be selective.

@@ -5,6 +5,7 @@
 
 #include "libbb.h"
 #include <netinet/in.h>
+#include <sys/stat.h>
 #ifdef CONFIG_HAVE_JSON_C
 #include "atlas_read_response_json.h"
 #endif
@@ -195,6 +196,7 @@ static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst
 #define RESP_DATA	7
 #define RESP_CMSG	8
 #define RESP_TIMEOUT	9
+#define RESP_ADDRINFO_10	10
 
 static int got_type= 0;
 static int stored_type;
@@ -211,6 +213,16 @@ void set_response_tool(const char *tool) {
 /*	fprintf(stderr, "DEBUG: set_response_tool: tool set to '%s'\n", tool); */
 }
 
+/* Helper function to get file size once */
+static off_t get_file_size(FILE *file) {
+	struct stat file_stat;
+	if (fstat(fileno(file), &file_stat) != 0) {
+		fprintf(stderr, "ERROR: Failed to get file size: %s\n", strerror(errno));
+		exit(1);
+	}
+	return file_stat.st_size;
+}
+
 /* All datafiles are Linux-generated, no detection needed */
 static int detect_linux_datafile(int response_type) {
 	/* Suppress unused parameter warning */
@@ -220,7 +232,6 @@ static int detect_linux_datafile(int response_type) {
 
 #ifndef __linux__
 /* Convert Linux timeval to local OS timeval - unused for now */
-#if 0
 static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
 {
@@ -241,14 +252,9 @@ static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_
 		*local_size = linux_size;
 	}
 }
-#endif
-#endif /* !__linux__ */
 
 
-
-#ifndef __linux__
 /* Convert Linux sockaddr to local OS sockaddr - unused for now */
-#if 0
 static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
 {
@@ -359,7 +365,6 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	memcpy(local_data, linux_data, copy_size);
 	*local_size = copy_size;
 }
-#endif
 #endif /* !__linux__ */
 
 /* Check if file is JSON format and initialize if so */
@@ -478,10 +483,9 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 {
 	int tmp_type;
 	size_t tmp_size;
-	char temp_buffer[256]; /* Buffer for reading data */
 	int mapped_type;
 	
-	/* All datafiles are Linux on FreeBSD */
+	/* All datafiles are Linux */
 	int is_linux_datafile = 1;
 	printf("DEBUG: read_response: is_linux_datafile=%d, type=%d\n", is_linux_datafile, type);
 
@@ -497,8 +501,8 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 			fprintf(stderr, "read_response: error reading\n");
 			exit(1);
 		}
-		/* Convert from network byte order to host byte order */
-		tmp_type = ntohl(tmp_type);
+		/* Convert from little-endian (Linux) to host byte order */
+		tmp_type = le32toh(tmp_type);
 	}
 	/* No response type mapping needed - use original type */
 	mapped_type = tmp_type;
@@ -519,53 +523,62 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 		fprintf(stderr, "read_response: error reading\n");
 		exit(1);
 	}
-	/* Convert from network byte order to host byte order */
-	tmp_size = ntohl(tmp_size);
+	/* Convert from little-endian (Linux) to host byte order */
+	tmp_size = le32toh(tmp_size);
 	
 	/* Handle data structures that need platform conversion */
-	if (is_linux_datafile && tmp_size <= sizeof(temp_buffer)) {
-		/* Read into temporary buffer first */
-		if (read(fd, temp_buffer, tmp_size) != (ssize_t)tmp_size)
+	if (is_linux_datafile) {
+		/* Allocate buffer for Linux data conversion with reasonable limits */
+		if (tmp_size > 1024 * 1024) { /* 1MB limit */
+			fprintf(stderr, "ERROR: Linux data too large (%zu > 1MB)\n", tmp_size);
+			exit(1);
+		}
+		
+		char *linux_buffer = malloc(tmp_size);
+		if (!linux_buffer) {
+			fprintf(stderr, "ERROR: Failed to allocate %zu bytes for Linux data\n", tmp_size);
+			exit(1);
+		}
+		
+		/* Read the full data structure */
+		if (read(fd, linux_buffer, tmp_size) != (ssize_t)tmp_size)
 		{
-			fprintf(stderr, "read_response: error reading\n");
+			fprintf(stderr, "ERROR: Failed to read %zu bytes of Linux data\n", tmp_size);
+			free(linux_buffer);
 			exit(1);
 		}
 		
 #ifndef __linux__
-		/* Use the new Linux data loader for proper conversion */
-		if (is_linux_datafile) {
-			load_linux_binary_data(type, temp_buffer, tmp_size, data, sizep);
-		} else {
-			/* For non-Linux datafiles, just copy the data */
-			if (tmp_size > *sizep)
-			{
-				fprintf(stderr, "read_response: data bigger than buffer\n");
-				exit(1);
-			}
-			memcpy(data, temp_buffer, tmp_size);
-			*sizep = tmp_size;
+		/* Use the Linux data loader for proper conversion */
+		if (load_linux_binary_data(type, linux_buffer, tmp_size, data, sizep) != 0) {
+			fprintf(stderr, "ERROR: Failed to convert Linux data for type %d\n", type);
+			free(linux_buffer);
+			exit(1);
 		}
+		free(linux_buffer);
 #else
 		/* On Linux, just copy the data directly */
 		if (tmp_size > *sizep)
 		{
-			fprintf(stderr, "read_response: data bigger than buffer\n");
+			fprintf(stderr, "ERROR: Data bigger than buffer (%zu > %zu)\n", tmp_size, *sizep);
+			free(linux_buffer);
 			exit(1);
 		}
-		memcpy(data, temp_buffer, tmp_size);
+		memcpy(data, linux_buffer, tmp_size);
 		*sizep = tmp_size;
+		free(linux_buffer);
 #endif
 	} else {
 		/* Regular data, read directly */
 		if (tmp_size > *sizep)
 		{
-			fprintf(stderr, "read_response: data bigger than buffer\n");
+			fprintf(stderr, "ERROR: Data bigger than buffer (%zu > %zu)\n", tmp_size, *sizep);
 			exit(1);
 		}
 		*sizep= tmp_size;
 		if (read(fd, data, tmp_size) != (ssize_t)tmp_size)
 		{
-			fprintf(stderr, "read_response: error reading\n");
+			fprintf(stderr, "ERROR: Failed to read %zu bytes\n", tmp_size);
 			exit(1);
 		}
 	}
@@ -576,15 +589,13 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 {
 	int r, tmp_type;
 	size_t tmp_size;
-	char temp_buffer[256]; /* Buffer for reading data */
 	int mapped_type;
 	
 	/* All datafiles are Linux on FreeBSD */
 	int is_linux_datafile = 1;
-
-#if 0
-	fprintf(stderr, "DEBUG: read_response_file called with type=%d, sizep=%zu\n", type, *sizep);
-#endif
+	
+	/* Get file size once at the beginning */
+	off_t file_size = get_file_size(file);
 
 #ifdef CONFIG_HAVE_JSON_C
 	if (using_json) {
@@ -604,8 +615,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		fprintf(stderr, "read_response_file: error reading\n");
 		exit(1);
 	}
-	/* Convert from network byte order to host byte order */
-	tmp_type = ntohl(tmp_type);
+	/* Convert from little-endian (Linux) to host byte order */
+	tmp_type = le32toh(tmp_type);
 	/* No response type mapping needed - use original type */
 	mapped_type = tmp_type;
 	
@@ -621,56 +632,70 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		fprintf(stderr, "read_response_file: error reading\n");
 		exit(1);
 	}
-	/* Convert from network byte order to host byte order */
-	tmp_size = ntohl(tmp_size);
+	/* Convert from little-endian (Linux) to host byte order */
+	tmp_size = le32toh(tmp_size);
 	
 	/* Handle data structures that need platform conversion */
-	if (is_linux_datafile && tmp_size <= sizeof(temp_buffer)) {
-		/* Read into temporary buffer first */
+	if (is_linux_datafile) {
+		/* Use already-obtained file size to validate data size */
+		if (tmp_size > file_size) {
+			fprintf(stderr, "ERROR: Data size %zu exceeds file size %ld\n", tmp_size, file_size);
+			exit(1);
+		}
+		
+		/* Check reasonable limits */
+		if (tmp_size > 1024 * 1024) { /* 1MB limit */
+			fprintf(stderr, "ERROR: Data size %zu exceeds 1MB limit\n", tmp_size);
+			exit(1);
+		}
+		
+		char *linux_buffer = malloc(tmp_size);
+		if (!linux_buffer) {
+			fprintf(stderr, "ERROR: Failed to allocate %zu bytes for Linux data\n", tmp_size);
+			exit(1);
+		}
+		
+		/* Read the full data structure */
 		if (tmp_size != 0)
 		{
-			r= fread(temp_buffer, tmp_size, 1, file);
+			r= fread(linux_buffer, tmp_size, 1, file);
 			if (r != 1)
 			{
 				fprintf(stderr,
-			"read_response_file: error reading %u bytes, got %d: %s\n",
-					(unsigned)tmp_size, r, strerror(errno));
+			"ERROR: Failed to read %zu bytes of Linux data, got %d: %s\n",
+					tmp_size, r, strerror(errno));
+				free(linux_buffer);
 				exit(1);
 			}
 		}
 		
 #ifndef __linux__
-		/* Use the new Linux data loader for proper conversion */
-		if (is_linux_datafile) {
-			load_linux_binary_data(type, temp_buffer, tmp_size, data, sizep);
-		} else {
-			/* For non-Linux datafiles, just copy the data */
-			if (tmp_size > *sizep)
-			{
-				fprintf(stderr,
-					"read_response_file: data bigger than buffer\n");
-				exit(1);
-			}
-			memcpy(data, temp_buffer, tmp_size);
-			*sizep = tmp_size;
+		/* Use the Linux data loader for proper conversion */
+		if (load_linux_binary_data(type, linux_buffer, tmp_size, data, sizep) != 0) {
+			fprintf(stderr, "ERROR: Failed to convert Linux data for type %d\n", type);
+			free(linux_buffer);
+			exit(1);
 		}
+		free(linux_buffer);
 #else
 		/* On Linux, just copy the data directly */
 		if (tmp_size > *sizep)
 		{
 			fprintf(stderr,
-				"read_response_file: data bigger than buffer\n");
+				"ERROR: Data bigger than buffer (%zu > %zu)\n", tmp_size, *sizep);
+			free(linux_buffer);
 			exit(1);
 		}
-		memcpy(data, temp_buffer, tmp_size);
+		memcpy(data, linux_buffer, tmp_size);
 		*sizep = tmp_size;
+		free(linux_buffer);
 #endif
 	} else {
 		/* Regular data, read directly */
 		if (tmp_size > *sizep)
 		{
 			fprintf(stderr,
-				"read_response_file: data bigger than buffer\n");
+				"ERROR: Data bigger than buffer (%zu > %zu)\n", tmp_size, *sizep);
 			exit(1);
 		}
 		*sizep= tmp_size;
@@ -680,8 +705,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 			if (r != 1)
 			{
 				fprintf(stderr,
-			"read_response_file: error reading %u bytes, got %d: %s\n",
-					(unsigned)tmp_size, r, strerror(errno));
+			"ERROR: Failed to read %zu bytes, got %d: %s\n",
+					tmp_size, r, strerror(errno));
 				exit(1);
 			}
 		}
