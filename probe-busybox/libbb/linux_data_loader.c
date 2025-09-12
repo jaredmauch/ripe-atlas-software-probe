@@ -106,6 +106,51 @@ static void convert_linux_addrinfo_to_local(const struct linux_addrinfo *linux_a
 	local_ai->ai_next = (struct addrinfo *)linux_ai->ai_next;
 }
 
+/* Linux-specific destination address structure */
+struct linux_dstaddr {
+	int family;
+	union {
+		struct in_addr ipv4;
+		struct in6_addr ipv6;
+	} addr;
+};
+
+/* Linux-specific packet data structure */
+struct linux_packet {
+	uint32_t size;
+	uint8_t data[0];
+};
+
+/* Linux-specific TTL structure */
+struct linux_ttl {
+	uint8_t ttl;
+	uint8_t tos;
+	uint16_t flags;
+};
+
+/* Convert Linux destination address to FreeBSD destination address */
+static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
+	local_dst->family = linux_dst->family;
+	if (linux_dst->family == AF_INET) {
+		local_dst->addr.ipv4 = linux_dst->addr.ipv4;
+	} else if (linux_dst->family == AF_INET6) {
+		local_dst->addr.ipv6 = linux_dst->addr.ipv6;
+	}
+}
+
+/* Convert Linux packet data to FreeBSD packet data */
+static void convert_linux_packet_to_local(const struct linux_packet *linux_pkt, struct linux_packet *local_pkt, size_t data_size) {
+	local_pkt->size = linux_pkt->size;
+	memcpy(local_pkt->data, linux_pkt->data, data_size - sizeof(uint32_t));
+}
+
+/* Convert Linux TTL to FreeBSD TTL */
+static void convert_linux_ttl_to_local(const struct linux_ttl *linux_ttl, struct linux_ttl *local_ttl) {
+	local_ttl->ttl = linux_ttl->ttl;
+	local_ttl->tos = linux_ttl->tos;
+	local_ttl->flags = linux_ttl->flags;
+}
+
 /* Application-specific response type mapping based on calling application */
 int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 	if (!app_tool) return linux_type;
@@ -226,6 +271,40 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 				fprintf(stderr, "DEBUG: Converted to FreeBSD sockaddr_in6, size=%zu\n", *local_size);
 				return 0;
 			}
+		}
+	} else if (mapped_type == RESP_DSTADDR) {
+		/* Handle destination address structures */
+		fprintf(stderr, "DEBUG: Processing destination address structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_dstaddr)) {
+			const struct linux_dstaddr *linux_dst = (const struct linux_dstaddr *)linux_data;
+			fprintf(stderr, "DEBUG: Linux dstaddr: family=%d\n", linux_dst->family);
+			convert_linux_dstaddr_to_local(linux_dst, (struct linux_dstaddr *)local_data);
+			*local_size = sizeof(struct linux_dstaddr);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD dstaddr, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_PACKET) {
+		/* Handle packet data structures */
+		fprintf(stderr, "DEBUG: Processing packet data structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_packet)) {
+			const struct linux_packet *linux_pkt = (const struct linux_packet *)linux_data;
+			fprintf(stderr, "DEBUG: Linux packet: size=%u\n", linux_pkt->size);
+			convert_linux_packet_to_local(linux_pkt, (struct linux_packet *)local_data, linux_size);
+			*local_size = linux_size;
+			fprintf(stderr, "DEBUG: Converted to FreeBSD packet, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_RCVDTTL || mapped_type == RESP_TTL) {
+		/* Handle TTL structures */
+		fprintf(stderr, "DEBUG: Processing TTL structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_ttl)) {
+			const struct linux_ttl *linux_ttl = (const struct linux_ttl *)linux_data;
+			fprintf(stderr, "DEBUG: Linux TTL: ttl=%d, tos=%d, flags=%d\n", 
+				linux_ttl->ttl, linux_ttl->tos, linux_ttl->flags);
+			convert_linux_ttl_to_local(linux_ttl, (struct linux_ttl *)local_data);
+			*local_size = sizeof(struct linux_ttl);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD TTL, size=%zu\n", *local_size);
+			return 0;
 		}
 	} else if (mapped_type == RESP_TIMEOFDAY) {
 		/* Handle timeval structures */
