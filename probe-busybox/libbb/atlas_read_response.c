@@ -281,6 +281,7 @@ static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *l
 	local_sin->sin_addr = linux_sin->sin_addr;
 	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
 }
+#endif
 
 /* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 - unused for now */
 #if 0
@@ -291,6 +292,7 @@ static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 
 	local_sin6->sin6_addr = linux_sin6->sin6_addr;
 	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
 }
+#endif
 #endif /* !__linux__ */
 
 
