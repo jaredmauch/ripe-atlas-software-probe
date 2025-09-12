@@ -208,7 +208,7 @@ const char *current_tool = NULL;
 /* Set the current tool for response type mapping */
 void set_response_tool(const char *tool) {
 	current_tool = tool;
-	fprintf(stderr, "DEBUG: set_response_tool: tool set to '%s'\n", tool);
+/*	fprintf(stderr, "DEBUG: set_response_tool: tool set to '%s'\n", tool); */
 }
 
 /* All datafiles are Linux-generated, no detection needed */
@@ -489,6 +489,7 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	
 	/* All datafiles are Linux on FreeBSD */
 	int is_linux_datafile = 1;
+	printf("DEBUG: read_response: is_linux_datafile=%d, type=%d\n", is_linux_datafile, type);
 
 	if (got_type)
 	{
