@@ -174,8 +174,7 @@ static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_
 #endif /* !__linux__ */
 
 #ifndef __linux__
-/* Convert Linux addrinfo to local OS addrinfo - unused for now */
-#if 0
+/* Convert Linux addrinfo to local OS addrinfo */
 static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
 {
@@ -215,8 +214,7 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 #endif /* !__linux__ */
 
 #ifndef __linux__
-/* Convert Linux sockaddr_in to FreeBSD sockaddr_in - unused for now */
-#if 0
+/* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
 static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
 	local_sin->sin_family = linux_sin->sin_family;
 	local_sin->sin_port = linux_sin->sin_port;
@@ -225,14 +223,23 @@ static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *l
 }
 #endif
 
-/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 - unused for now */
-#if 0
+/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
 static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
 	local_sin6->sin6_family = linux_sin6->sin6_family;
 	local_sin6->sin6_port = linux_sin6->sin6_port;
 	local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
 	local_sin6->sin6_addr = linux_sin6->sin6_addr;
 	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
+}
+
+/* Convert Linux dstaddr to FreeBSD dstaddr */
+static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
+	local_dst->family = linux_dst->family;
+	if (linux_dst->family == AF_INET) {
+		local_dst->addr.ipv4 = linux_dst->addr.ipv4;
+	} else if (linux_dst->family == AF_INET6) {
+		local_dst->addr.ipv6 = linux_dst->addr.ipv6;
+	}
 }
 #endif
 #endif /* !__linux__ */
