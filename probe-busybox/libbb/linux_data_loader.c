@@ -128,6 +128,17 @@ struct linux_ttl {
 	uint16_t flags;
 };
 
+/* Linux-specific traffic class structure */
+struct linux_traffic_class {
+	uint8_t ttl;
+	uint8_t tos;
+	uint16_t flags;
+	union {
+		struct in_addr ipv4;
+		struct in6_addr ipv6;
+	} addr;
+};
+
 /* Convert Linux destination address to FreeBSD destination address */
 static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
 	local_dst->family = linux_dst->family;
@@ -149,6 +160,14 @@ static void convert_linux_ttl_to_local(const struct linux_ttl *linux_ttl, struct
 	local_ttl->ttl = linux_ttl->ttl;
 	local_ttl->tos = linux_ttl->tos;
 	local_ttl->flags = linux_ttl->flags;
+}
+
+/* Convert Linux traffic class to FreeBSD traffic class */
+static void convert_linux_traffic_class_to_local(const struct linux_traffic_class *linux_tc, struct linux_traffic_class *local_tc) {
+	local_tc->ttl = linux_tc->ttl;
+	local_tc->tos = linux_tc->tos;
+	local_tc->flags = linux_tc->flags;
+	local_tc->addr = linux_tc->addr;
 }
 
 /* Application-specific response type mapping based on calling application */
@@ -179,7 +198,7 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evping") == 0) {
-		/* evping expects: 1, 2, 5, 4, 3, 8, 9 */
+		/* evping expects: 1, 2, 5, 4, 3, 8, 9, 6 */
 		switch (linux_type) {
 			case 1: return 1; /* RESP_PACKET */
 			case 2: return 2; /* RESP_PEERNAME */
@@ -188,9 +207,10 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 			case 3: return 3; /* RESP_SOCKNAME */
 			case 8: return 8; /* RESP_ADDRINFO */
 			case 9: return 9; /* RESP_ADDRINFO_SA */
+			case 6: return 6; /* RESP_RCVDTCLASS */
 			default: 
 				fprintf(stderr, "ERROR: evping got unexpected Linux type %d\n", linux_type);
-				fprintf(stderr, "ERROR: Expected types: 1, 2, 5, 4, 3, 8, 9 - stopping test\n");
+				fprintf(stderr, "ERROR: Expected types: 1, 2, 5, 4, 3, 8, 9, 6 - stopping test\n");
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evntp") == 0) {
@@ -295,16 +315,28 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 			fprintf(stderr, "DEBUG: Converted to FreeBSD packet, size=%zu\n", *local_size);
 			return 0;
 		}
-	} else if (mapped_type == RESP_RCVDTTL || mapped_type == RESP_TTL || mapped_type == RESP_RCVDTCLASS) {
-		/* Handle TTL/Traffic Class structures */
-		fprintf(stderr, "DEBUG: Processing TTL/Traffic Class structure (type %d)\n", response_type);
+	} else if (mapped_type == RESP_RCVDTCLASS) {
+		/* Handle Traffic Class structures (contains address data) */
+		fprintf(stderr, "DEBUG: Processing Traffic Class structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_traffic_class)) {
+			const struct linux_traffic_class *linux_tc = (const struct linux_traffic_class *)linux_data;
+			fprintf(stderr, "DEBUG: Linux Traffic Class: ttl=%d, tos=%d, flags=%d\n", 
+				linux_tc->ttl, linux_tc->tos, linux_tc->flags);
+			convert_linux_traffic_class_to_local(linux_tc, (struct linux_traffic_class *)local_data);
+			*local_size = sizeof(struct linux_traffic_class);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD Traffic Class, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_RCVDTTL || mapped_type == RESP_TTL) {
+		/* Handle TTL structures */
+		fprintf(stderr, "DEBUG: Processing TTL structure (type %d)\n", response_type);
 		if (linux_size >= sizeof(struct linux_ttl)) {
 			const struct linux_ttl *linux_ttl = (const struct linux_ttl *)linux_data;
-			fprintf(stderr, "DEBUG: Linux TTL/Traffic Class: ttl=%d, tos=%d, flags=%d\n", 
+			fprintf(stderr, "DEBUG: Linux TTL: ttl=%d, tos=%d, flags=%d\n", 
 				linux_ttl->ttl, linux_ttl->tos, linux_ttl->flags);
 			convert_linux_ttl_to_local(linux_ttl, (struct linux_ttl *)local_data);
 			*local_size = sizeof(struct linux_ttl);
-			fprintf(stderr, "DEBUG: Converted to FreeBSD TTL/Traffic Class, size=%zu\n", *local_size);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD TTL, size=%zu\n", *local_size);
 			return 0;
 		}
 	} else if (mapped_type == RESP_TIMEOFDAY) {
