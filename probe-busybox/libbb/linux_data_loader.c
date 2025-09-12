@@ -177,44 +177,25 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	} else if (mapped_type == RESP_SOCKNAME) {
 		/* Handle socket name - convert Linux sockaddr to FreeBSD sockaddr */
 		printf("DEBUG: load_linux_binary_data RESP_SOCKNAME: linux_size=%zu, local_size=%zu\n", linux_size, *local_size);
-		if (linux_size >= sizeof(struct linux_sockaddr_in6) && *local_size >= sizeof(struct sockaddr_in6)) {
-			printf("DEBUG: Converting IPv6 sockaddr\n");
-			convert_linux_sockaddr_in6_to_local((const struct linux_sockaddr_in6*)linux_data, (struct sockaddr_in6*)local_data);
-			*local_size = sizeof(struct sockaddr_in6);
-		} else if (linux_size >= sizeof(struct linux_sockaddr_in) && *local_size >= sizeof(struct sockaddr_in)) {
-			printf("DEBUG: Converting IPv4 sockaddr\n");
-			convert_linux_sockaddr_in_to_local((const struct linux_sockaddr_in*)linux_data, (struct sockaddr_in*)local_data);
-			*local_size = sizeof(struct sockaddr_in);
-		} else {
-			printf("DEBUG: Fallback copy for RESP_SOCKNAME\n");
-			/* Fallback: just copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
-		}
+		/* TEMPORARILY DISABLE CONVERSION TO DEBUG CRASHES */
+		printf("DEBUG: Using fallback copy for RESP_SOCKNAME (conversion disabled)\n");
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
 		return 0;
 	} else if (mapped_type == RESP_DSTADDR) {
 		/* Handle destination address - convert Linux dstaddr to FreeBSD dstaddr */
-		if (linux_size >= sizeof(struct linux_dstaddr) && *local_size >= sizeof(struct linux_dstaddr)) {
-			convert_linux_dstaddr_to_local((const struct linux_dstaddr*)linux_data, (struct linux_dstaddr*)local_data);
-			*local_size = sizeof(struct linux_dstaddr);
-		} else {
-			/* Fallback: just copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
-		}
+		printf("DEBUG: Using fallback copy for RESP_DSTADDR (conversion disabled)\n");
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
 		return 0;
 	} else if (mapped_type == RESP_ADDRINFO) {
 		/* Handle addrinfo - convert Linux addrinfo to FreeBSD addrinfo */
-		if (linux_size >= sizeof(struct linux_addrinfo) && *local_size >= sizeof(struct addrinfo)) {
-			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
-		} else {
-			/* Fallback: just copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
-		}
+		printf("DEBUG: Using fallback copy for RESP_ADDRINFO (conversion disabled)\n");
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
 		return 0;
 	} else if (mapped_type == RESP_PROTO) {
 		/* Handle protocol - just copy for now */
