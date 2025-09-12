@@ -127,7 +127,6 @@ static int using_json = 0;
 
 /* Global variable to track current tool for response type mapping */
 const char *current_tool = NULL;
-static int is_linux_datafile = 0;
 
 /* Set the current tool for response type mapping */
 void set_response_tool(const char *tool) {
@@ -471,6 +470,9 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	int tmp_type;
 	size_t tmp_size;
 	char temp_buffer[256]; /* Buffer for reading data */
+	
+	/* All datafiles are Linux on FreeBSD */
+	int is_linux_datafile = 1;
 
 	if (got_type)
 	{
@@ -488,7 +490,7 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	/* Apply response type mapping for cross-platform compatibility */
 	int mapped_type = map_linux_response_type(tmp_type);
 	
-#ifdef 0
+#if 0
 	fprintf(stderr, "DEBUG: read_response: expected type %d, got type %d, mapped to %d\n", type, tmp_type, mapped_type);
 	
 #endif
@@ -560,8 +562,11 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 	int r, tmp_type;
 	size_t tmp_size;
 	char temp_buffer[256]; /* Buffer for reading data */
+	
+	/* All datafiles are Linux on FreeBSD */
+	int is_linux_datafile = 1;
 
-#ifdef 0
+#if 0
 	fprintf(stderr, "DEBUG: read_response_file called with type=%d, sizep=%zu\n", type, *sizep);
 #endif
 
