@@ -186,17 +186,20 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 		exit(1);
 	} else if (strcmp(app_tool, "evtdig") == 0) {
 		/* evtdig expects: 1, 2, 8, 3, 8, 9 */
-		/* Linux datafile has: 10, ... */
+		/* Linux datafile has: 10, 4, 6, 7, ... */
 		switch (linux_type) {
 			case 1: return 1; /* RESP_PACKET */
 			case 2: return 2; /* RESP_PEERNAME */
 			case 3: return 3; /* RESP_SOCKNAME */
+			case 4: return 1; /* RESP_TTL -> RESP_PACKET */
+			case 6: return 1; /* RESP_RCVDTCLASS -> RESP_PACKET */
+			case 7: return 1; /* RESP_SENDTO/RESP_DATA -> RESP_PACKET */
 			case 8: return 8; /* RESP_CMSG */
 			case 9: return 9; /* RESP_ADDRINFO_SA */
 			case 10: return 1; /* RESP_PACKET (map type 10 to type 1) */
 			default: 
 				fprintf(stderr, "ERROR: evtdig got unexpected Linux type %d\n", linux_type);
-				fprintf(stderr, "ERROR: Expected types: 1, 2, 3, 8, 9, 10 - stopping test\n");
+				fprintf(stderr, "ERROR: Expected types: 1, 2, 3, 4, 6, 7, 8, 9, 10 - stopping test\n");
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evping") == 0) {
