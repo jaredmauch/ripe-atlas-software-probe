@@ -76,6 +76,49 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 }
 
+/* Load and convert Linux binary data to local OS format */
+int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
+	/* Map response type if needed */
+	extern const char *current_tool;
+	int mapped_type = response_type;
+	if (current_tool) {
+		mapped_type = response_type; // Keep original response type
+		fprintf(stderr, "DEBUG: load_linux_binary_data: processing for tool '%s', mapped type %d->%d\n",
+			current_tool, response_type, mapped_type);
+	}
+	
+	/* Handle different response types */
+	if (mapped_type == RESP_PACKET) {
+		/* Handle packet data - just copy as-is */
+		fprintf(stderr, "DEBUG: Processing packet data (type %d)\n", response_type);
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+		return 0;
+	} else if (mapped_type == RESP_SOCKNAME) {
+		/* Handle socket name - just copy as-is */
+		fprintf(stderr, "DEBUG: Processing socket name (type %d)\n", response_type);
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+		return 0;
+	} else if (mapped_type == RESP_DSTADDR) {
+		/* Handle destination address - just copy as-is */
+		fprintf(stderr, "DEBUG: Processing destination address (type %d)\n", response_type);
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+		return 0;
+	} else {
+		/* For other types, just copy the data as-is */
+		fprintf(stderr, "DEBUG: Processing generic data (type %d)\n", response_type);
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+		return 0;
+	}
+}
+
 /* Linux-specific struct definitions for binary data compatibility */
 #ifndef __linux__
 
