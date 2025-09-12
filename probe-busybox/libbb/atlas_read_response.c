@@ -210,8 +210,8 @@ static int map_linux_response_type(int linux_type) {
 		}
 	}
 	
-	fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
-		current_tool, linux_type, mapped_type);
+	// fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
+	//	current_tool, linux_type, mapped_type);
 	
 	return mapped_type;
 }
@@ -549,7 +549,7 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	/* Apply response type mapping for cross-platform compatibility */
 	int mapped_type = map_linux_response_type(tmp_type);
 	
-#if 1
+#if 0
 	fprintf(stderr, "DEBUG: read_response: expected type %d, got type %d, mapped to %d\n", type, tmp_type, mapped_type);
 	
 #endif
