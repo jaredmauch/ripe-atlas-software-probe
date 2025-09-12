@@ -254,6 +254,9 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 
 /* Load and convert Linux binary data to local OS format */
 int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
+	extern const char *current_tool;
+	int mapped_type;
+	
 	printf("DEBUG: load_linux_binary_data called: response_type=%d, linux_size=%zu, local_size=%zu\n", response_type, linux_size, *local_size);
 	
 	/* Safety checks */
@@ -276,10 +279,6 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	
 	/* Map response type if needed */
-	extern const char *current_tool;
-	{
-		int mapped_type;
-	
 	mapped_type = response_type;
 	if (current_tool) {
 		mapped_type = response_type; // Keep original response type
@@ -405,7 +404,6 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		*local_size = linux_size;
 		return 0;
 	}
-	} /* End of mapped_type block */
 }
 
 #endif /* !__linux__ */
