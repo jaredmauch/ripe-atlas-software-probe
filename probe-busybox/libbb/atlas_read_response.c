@@ -53,6 +53,47 @@ struct linux_sockaddr {
 	char sa_data[14];      /* Address data */
 };
 
+/* Linux protocol structure */
+struct linux_proto {
+	uint8_t protocol;      /* Protocol number (IPPROTO_TCP, IPPROTO_UDP, etc.) */
+	uint8_t flags;         /* Protocol flags */
+	uint16_t reserved;     /* Reserved field */
+};
+
+/* Linux control message structure */
+struct linux_cmsg {
+	uint32_t cmsg_len;     /* Length of control message */
+	int32_t cmsg_level;    /* Originating protocol */
+	int32_t cmsg_type;     /* Protocol-specific type */
+	uint8_t cmsg_data[0];  /* Control message data */
+};
+
+/* Linux length structure */
+struct linux_length {
+	uint32_t length;       /* Data length */
+	uint32_t flags;        /* Length flags */
+};
+
+/* Linux timeout structure */
+struct linux_timeout {
+	uint32_t timeout_ms;   /* Timeout in milliseconds */
+	uint32_t flags;        /* Timeout flags */
+};
+
+/* Linux resolver structure */
+struct linux_resolver {
+	uint32_t resolver_id;  /* Resolver identifier */
+	uint32_t flags;        /* Resolver flags */
+	char resolver_name[64]; /* Resolver name/address */
+};
+
+/* Linux read error structure */
+struct linux_read_error {
+	int32_t error_code;    /* Error code (errno) */
+	uint32_t flags;        /* Error flags */
+	char error_msg[128];   /* Error message */
+};
+
 #endif /* !__linux__ */
 
 /* Response types for packet replay */

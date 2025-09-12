@@ -155,6 +155,47 @@ struct linux_sockaddr {
 	char sa_data[14];      /* Address data */
 };
 
+/* Linux protocol structure */
+struct linux_proto {
+	uint8_t protocol;      /* Protocol number (IPPROTO_TCP, IPPROTO_UDP, etc.) */
+	uint8_t flags;         /* Protocol flags */
+	uint16_t reserved;     /* Reserved field */
+};
+
+/* Linux control message structure */
+struct linux_cmsg {
+	uint32_t cmsg_len;     /* Length of control message */
+	int32_t cmsg_level;    /* Originating protocol */
+	int32_t cmsg_type;     /* Protocol-specific type */
+	uint8_t cmsg_data[0];  /* Control message data */
+};
+
+/* Linux length structure */
+struct linux_length {
+	uint32_t length;       /* Data length */
+	uint32_t flags;        /* Length flags */
+};
+
+/* Linux timeout structure */
+struct linux_timeout {
+	uint32_t timeout_ms;   /* Timeout in milliseconds */
+	uint32_t flags;        /* Timeout flags */
+};
+
+/* Linux resolver structure */
+struct linux_resolver {
+	uint32_t resolver_id;  /* Resolver identifier */
+	uint32_t flags;        /* Resolver flags */
+	char resolver_name[64]; /* Resolver name/address */
+};
+
+/* Linux read error structure */
+struct linux_read_error {
+	int32_t error_code;    /* Error code (errno) */
+	uint32_t flags;        /* Error flags */
+	char error_msg[128];   /* Error message */
+};
+
 /* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
 static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
 	local_sin->sin_family = linux_sin->sin_family;
@@ -252,6 +293,51 @@ static void convert_linux_traffic_class_to_local(const struct linux_traffic_clas
 	local_tc->tos = linux_tc->tos;
 	local_tc->flags = linux_tc->flags;
 	local_tc->addr = linux_tc->addr;
+}
+
+/* Convert Linux protocol to FreeBSD protocol */
+static void convert_linux_proto_to_local(const struct linux_proto *linux_proto, struct linux_proto *local_proto) {
+	local_proto->protocol = linux_proto->protocol;
+	local_proto->flags = linux_proto->flags;
+	local_proto->reserved = linux_proto->reserved;
+}
+
+/* Convert Linux control message to FreeBSD control message */
+static void convert_linux_cmsg_to_local(const struct linux_cmsg *linux_cmsg, struct linux_cmsg *local_cmsg, size_t data_size) {
+	local_cmsg->cmsg_len = linux_cmsg->cmsg_len;
+	local_cmsg->cmsg_level = linux_cmsg->cmsg_level;
+	local_cmsg->cmsg_type = linux_cmsg->cmsg_type;
+	if (data_size > sizeof(struct linux_cmsg)) {
+		memcpy(local_cmsg->cmsg_data, linux_cmsg->cmsg_data, data_size - sizeof(struct linux_cmsg));
+	}
+}
+
+/* Convert Linux length to FreeBSD length */
+static void convert_linux_length_to_local(const struct linux_length *linux_length, struct linux_length *local_length) {
+	local_length->length = linux_length->length;
+	local_length->flags = linux_length->flags;
+}
+
+/* Convert Linux timeout to FreeBSD timeout */
+static void convert_linux_timeout_to_local(const struct linux_timeout *linux_timeout, struct linux_timeout *local_timeout) {
+	local_timeout->timeout_ms = linux_timeout->timeout_ms;
+	local_timeout->flags = linux_timeout->flags;
+}
+
+/* Convert Linux resolver to FreeBSD resolver */
+static void convert_linux_resolver_to_local(const struct linux_resolver *linux_resolver, struct linux_resolver *local_resolver) {
+	local_resolver->resolver_id = linux_resolver->resolver_id;
+	local_resolver->flags = linux_resolver->flags;
+	strncpy(local_resolver->resolver_name, linux_resolver->resolver_name, sizeof(local_resolver->resolver_name) - 1);
+	local_resolver->resolver_name[sizeof(local_resolver->resolver_name) - 1] = '\0';
+}
+
+/* Convert Linux read error to FreeBSD read error */
+static void convert_linux_read_error_to_local(const struct linux_read_error *linux_error, struct linux_read_error *local_error) {
+	local_error->error_code = linux_error->error_code;
+	local_error->flags = linux_error->flags;
+	strncpy(local_error->error_msg, linux_error->error_msg, sizeof(local_error->error_msg) - 1);
+	local_error->error_msg[sizeof(local_error->error_msg) - 1] = '\0';
 }
 
 
@@ -372,6 +458,90 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 			convert_linux_addrinfo_to_local(linux_ai, (struct addrinfo *)local_data);
 			*local_size = sizeof(struct addrinfo);
 			fprintf(stderr, "DEBUG: Converted to FreeBSD addrinfo, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_PROTO) {
+		/* Handle protocol structures */
+		fprintf(stderr, "DEBUG: Processing protocol structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_proto)) {
+			const struct linux_proto *linux_proto = (const struct linux_proto *)linux_data;
+			fprintf(stderr, "DEBUG: Linux proto: protocol=%d, flags=%d\n", 
+				linux_proto->protocol, linux_proto->flags);
+			convert_linux_proto_to_local(linux_proto, (struct linux_proto *)local_data);
+			*local_size = sizeof(struct linux_proto);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD proto, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_CMSG) {
+		/* Handle control message structures */
+		fprintf(stderr, "DEBUG: Processing control message structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_cmsg)) {
+			const struct linux_cmsg *linux_cmsg = (const struct linux_cmsg *)linux_data;
+			fprintf(stderr, "DEBUG: Linux cmsg: len=%d, level=%d, type=%d\n", 
+				linux_cmsg->cmsg_len, linux_cmsg->cmsg_level, linux_cmsg->cmsg_type);
+			convert_linux_cmsg_to_local(linux_cmsg, (struct linux_cmsg *)local_data, linux_size);
+			*local_size = linux_size;
+			fprintf(stderr, "DEBUG: Converted to FreeBSD cmsg, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_LENGTH) {
+		/* Handle length structures */
+		fprintf(stderr, "DEBUG: Processing length structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_length)) {
+			const struct linux_length *linux_length = (const struct linux_length *)linux_data;
+			fprintf(stderr, "DEBUG: Linux length: length=%d, flags=%d\n", 
+				linux_length->length, linux_length->flags);
+			convert_linux_length_to_local(linux_length, (struct linux_length *)local_data);
+			*local_size = sizeof(struct linux_length);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD length, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_TIMEOUT) {
+		/* Handle timeout structures */
+		fprintf(stderr, "DEBUG: Processing timeout structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_timeout)) {
+			const struct linux_timeout *linux_timeout = (const struct linux_timeout *)linux_data;
+			fprintf(stderr, "DEBUG: Linux timeout: timeout_ms=%d, flags=%d\n", 
+				linux_timeout->timeout_ms, linux_timeout->flags);
+			convert_linux_timeout_to_local(linux_timeout, (struct linux_timeout *)local_data);
+			*local_size = sizeof(struct linux_timeout);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD timeout, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_RESOLVER) {
+		/* Handle resolver structures */
+		fprintf(stderr, "DEBUG: Processing resolver structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_resolver)) {
+			const struct linux_resolver *linux_resolver = (const struct linux_resolver *)linux_data;
+			fprintf(stderr, "DEBUG: Linux resolver: id=%d, flags=%d, name=%s\n", 
+				linux_resolver->resolver_id, linux_resolver->flags, linux_resolver->resolver_name);
+			convert_linux_resolver_to_local(linux_resolver, (struct linux_resolver *)local_data);
+			*local_size = sizeof(struct linux_resolver);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD resolver, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_N_RESOLV) {
+		/* Handle resolver structures (same as RESP_RESOLVER) */
+		fprintf(stderr, "DEBUG: Processing resolver structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_resolver)) {
+			const struct linux_resolver *linux_resolver = (const struct linux_resolver *)linux_data;
+			fprintf(stderr, "DEBUG: Linux resolver: id=%d, flags=%d, name=%s\n", 
+				linux_resolver->resolver_id, linux_resolver->flags, linux_resolver->resolver_name);
+			convert_linux_resolver_to_local(linux_resolver, (struct linux_resolver *)local_data);
+			*local_size = sizeof(struct linux_resolver);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD resolver, size=%zu\n", *local_size);
+			return 0;
+		}
+	} else if (mapped_type == RESP_READ_ERROR) {
+		/* Handle read error structures */
+		fprintf(stderr, "DEBUG: Processing read error structure (type %d)\n", response_type);
+		if (linux_size >= sizeof(struct linux_read_error)) {
+			const struct linux_read_error *linux_error = (const struct linux_read_error *)linux_data;
+			fprintf(stderr, "DEBUG: Linux read error: code=%d, flags=%d, msg=%s\n", 
+				linux_error->error_code, linux_error->flags, linux_error->error_msg);
+			convert_linux_read_error_to_local(linux_error, (struct linux_read_error *)local_data);
+			*local_size = sizeof(struct linux_read_error);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD read error, size=%zu\n", *local_size);
 			return 0;
 		}
 	} else {
