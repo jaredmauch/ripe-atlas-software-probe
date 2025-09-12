@@ -359,7 +359,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	extern const char *current_tool;
 	int mapped_type = response_type;
 	if (current_tool) {
-		mapped_type = map_linux_to_app_response_type(response_type, current_tool);
+		mapped_type = response_type; // Keep original response type
 		fprintf(stderr, "DEBUG: load_linux_binary_data: processing for tool '%s', mapped type %d->%d\n", 
 			current_tool, response_type, mapped_type);
 	}

@@ -152,8 +152,8 @@ static int map_linux_response_type(int linux_type) {
 	
 	/* All datafiles are Linux, so always apply mapping */
 	
-	/* Use application-specific response type mapping */
-	int mapped_type = map_linux_to_app_response_type(linux_type, current_tool);
+	/* Keep original response type - no mapping needed */
+	int mapped_type = linux_type;
 	
 	return mapped_type;
 }
