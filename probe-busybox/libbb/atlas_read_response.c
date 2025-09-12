@@ -94,6 +94,15 @@ struct linux_read_error {
 	char error_msg[128];   /* Error message */
 };
 
+/* Linux dstaddr structure */
+struct linux_dstaddr {
+	int family;            /* Address family */
+	union {
+		struct in_addr ipv4;
+		struct in6_addr ipv6;
+	} addr;
+};
+
 /* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
 static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
 	local_sin->sin_family = linux_sin->sin_family;
@@ -239,45 +248,6 @@ static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_
 	}
 }
 #endif
-#endif /* !__linux__ */
-
-#ifndef __linux__
-/* Convert Linux addrinfo to local OS addrinfo */
-static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
-                                           void *local_data, size_t *local_size)
-{
-	const struct addrinfo *linux_ai = (const struct addrinfo *)linux_data;
-	struct addrinfo *local_ai = (struct addrinfo *)local_data;
-	
-	/* Clear the output buffer */
-	memset(local_data, 0, *local_size);
-	
-	if (linux_size >= sizeof(struct addrinfo)) {
-		/* Copy basic fields that are generally compatible */
-		local_ai->ai_flags = linux_ai->ai_flags;
-		local_ai->ai_family = linux_ai->ai_family;
-		local_ai->ai_socktype = linux_ai->ai_socktype;
-		local_ai->ai_protocol = linux_ai->ai_protocol;
-		local_ai->ai_addrlen = linux_ai->ai_addrlen;
-		
-		/* Handle canonical name - copy if present */
-		if (linux_ai->ai_canonname) {
-			/* Note: This is a pointer, so we can't directly copy it */
-			/* The actual string data would need to be handled separately */
-			local_ai->ai_canonname = NULL; /* Will be set by caller if needed */
-		}
-		
-		/* ai_addr and ai_next are pointers - will be set by caller */
-		local_ai->ai_addr = NULL;
-		local_ai->ai_next = NULL;
-		
-		*local_size = sizeof(struct addrinfo);
-	} else {
-		/* Fallback: copy what we can */
-		memcpy(local_data, linux_data, linux_size);
-		*local_size = linux_size;
-	}
-}
 #endif /* !__linux__ */
 
 
