@@ -94,6 +94,74 @@ struct linux_read_error {
 	char error_msg[128];   /* Error message */
 };
 
+/* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
+static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
+	local_sin->sin_family = linux_sin->sin_family;
+	local_sin->sin_port = linux_sin->sin_port;
+	local_sin->sin_addr = linux_sin->sin_addr;
+	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
+}
+
+/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
+static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
+	local_sin6->sin6_family = linux_sin6->sin6_family;
+	local_sin6->sin6_port = linux_sin6->sin6_port;
+	local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
+	local_sin6->sin6_addr = linux_sin6->sin6_addr;
+	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
+}
+
+/* Convert Linux addrinfo to local OS addrinfo */
+static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
+                                           void *local_data, size_t *local_size)
+{
+	const struct addrinfo *linux_ai = (const struct addrinfo *)linux_data;
+	struct addrinfo *local_ai = (struct addrinfo *)local_data;
+	
+	/* Clear the output buffer */
+	memset(local_data, 0, *local_size);
+	
+	if (linux_size >= sizeof(struct addrinfo) && *local_size >= sizeof(struct addrinfo)) {
+		/* Copy basic fields that are generally compatible */
+		local_ai->ai_flags = linux_ai->ai_flags;
+		local_ai->ai_family = linux_ai->ai_family;
+		local_ai->ai_socktype = linux_ai->ai_socktype;
+		local_ai->ai_protocol = linux_ai->ai_protocol;
+		local_ai->ai_addrlen = linux_ai->ai_addrlen;
+		
+		/* Handle canonical name - copy if present */
+		if (linux_ai->ai_canonname) {
+			size_t name_len = strlen(linux_ai->ai_canonname) + 1;
+			if (name_len <= 256) { /* Reasonable limit */
+				local_ai->ai_canonname = malloc(name_len);
+				if (local_ai->ai_canonname) {
+					strcpy(local_ai->ai_canonname, linux_ai->ai_canonname);
+				}
+			}
+		}
+		
+		/* ai_addr and ai_next are pointers - will be set by caller */
+		local_ai->ai_addr = NULL;
+		local_ai->ai_next = NULL;
+		
+		*local_size = sizeof(struct addrinfo);
+	} else {
+		/* Fallback: copy what we can */
+		memcpy(local_data, linux_data, linux_size);
+		*local_size = linux_size;
+	}
+}
+
+/* Convert Linux dstaddr to FreeBSD dstaddr */
+static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
+	local_dst->family = linux_dst->family;
+	if (linux_dst->family == AF_INET) {
+		local_dst->addr.ipv4 = linux_dst->addr.ipv4;
+	} else if (linux_dst->family == AF_INET6) {
+		local_dst->addr.ipv6 = linux_dst->addr.ipv6;
+	}
+}
+
 #endif /* !__linux__ */
 
 /* Response types for packet replay */
@@ -212,36 +280,6 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 }
 #endif /* !__linux__ */
 
-#ifndef __linux__
-/* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
-static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
-	local_sin->sin_family = linux_sin->sin_family;
-	local_sin->sin_port = linux_sin->sin_port;
-	local_sin->sin_addr = linux_sin->sin_addr;
-	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
-}
-#endif
-
-/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
-static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
-	local_sin6->sin6_family = linux_sin6->sin6_family;
-	local_sin6->sin6_port = linux_sin6->sin6_port;
-	local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-	local_sin6->sin6_addr = linux_sin6->sin6_addr;
-	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-}
-
-/* Convert Linux dstaddr to FreeBSD dstaddr */
-static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
-	local_dst->family = linux_dst->family;
-	if (linux_dst->family == AF_INET) {
-		local_dst->addr.ipv4 = linux_dst->addr.ipv4;
-	} else if (linux_dst->family == AF_INET6) {
-		local_dst->addr.ipv6 = linux_dst->addr.ipv6;
-	}
-}
-#endif
-#endif /* !__linux__ */
 
 
 #ifndef __linux__
