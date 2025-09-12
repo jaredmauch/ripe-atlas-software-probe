@@ -199,8 +199,11 @@ static int map_linux_response_type(int linux_type) {
 		mapped_type = linux_type;
 	}
 	
-	fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
-		current_tool, linux_type, mapped_type);
+	/* Only show debug message if there's an actual mapping change */
+	if (mapped_type != linux_type) {
+		fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
+			current_tool, linux_type, mapped_type);
+	}
 	
 	return mapped_type;
 }
@@ -529,6 +532,7 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	int tmp_type;
 	size_t tmp_size;
 	char temp_buffer[256]; /* Buffer for reading data */
+	int mapped_type;
 	
 	/* All datafiles are Linux on FreeBSD */
 	int is_linux_datafile = 1;
@@ -547,7 +551,6 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 		}
 	}
 	/* Apply response type mapping for cross-platform compatibility */
-	int mapped_type;
 	mapped_type = map_linux_response_type(tmp_type);
 	
 #if 0
@@ -622,6 +625,7 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 	int r, tmp_type;
 	size_t tmp_size;
 	char temp_buffer[256]; /* Buffer for reading data */
+	int mapped_type;
 	
 	/* All datafiles are Linux on FreeBSD */
 	int is_linux_datafile = 1;
@@ -649,7 +653,6 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		exit(1);
 	}
 	/* Apply response type mapping for cross-platform compatibility */
-	int mapped_type;
 	mapped_type = map_linux_response_type(tmp_type);
 	
 	if (mapped_type != type)
