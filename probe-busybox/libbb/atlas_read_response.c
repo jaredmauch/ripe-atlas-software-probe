@@ -488,8 +488,10 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	/* Apply response type mapping for cross-platform compatibility */
 	int mapped_type = map_linux_response_type(tmp_type);
 	
+#ifdef 0
 	fprintf(stderr, "DEBUG: read_response: expected type %d, got type %d, mapped to %d\n", type, tmp_type, mapped_type);
 	
+#endif
 	if (mapped_type != type)
 	{
 		fprintf(stderr,
@@ -559,7 +561,9 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 	size_t tmp_size;
 	char temp_buffer[256]; /* Buffer for reading data */
 
+#ifdef 0
 	fprintf(stderr, "DEBUG: read_response_file called with type=%d, sizep=%zu\n", type, *sizep);
+#endif
 
 #ifdef CONFIG_HAVE_JSON_C
 	if (using_json) {
