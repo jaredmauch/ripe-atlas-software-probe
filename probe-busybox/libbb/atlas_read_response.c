@@ -151,8 +151,46 @@ static int map_linux_response_type(int linux_type) {
 	
 	/* All datafiles are Linux, so always apply mapping */
 	
-	/* Keep original response type - no mapping needed */
+	/* Map Linux response types to expected response types */
 	int mapped_type = linux_type;
+	
+	/* Map Linux response types to the response types expected by the test code */
+	switch (linux_type) {
+		case 10: /* RESP_RESOLVER in Linux data */
+			mapped_type = RESP_RESOLVER; /* Keep as RESP_RESOLVER (5) */
+			break;
+		case 11: /* RESP_N_RESOLV in Linux data */
+			mapped_type = RESP_N_RESOLV; /* Keep as RESP_N_RESOLV (4) */
+			break;
+		case 3: /* RESP_DSTADDR in Linux data */
+			mapped_type = RESP_DSTADDR; /* Keep as RESP_DSTADDR (3) */
+			break;
+		case 1: /* RESP_PACKET in Linux data */
+			mapped_type = RESP_PACKET; /* Keep as RESP_PACKET (1) */
+			break;
+		case 2: /* RESP_SOCKNAME in Linux data */
+			mapped_type = RESP_SOCKNAME; /* Keep as RESP_SOCKNAME (2) */
+			break;
+		case 8: /* RESP_CMSG in Linux data */
+			mapped_type = RESP_CMSG; /* Keep as RESP_CMSG (8) */
+			break;
+		case 6: /* RESP_LENGTH in Linux data */
+			mapped_type = RESP_LENGTH; /* Keep as RESP_LENGTH (6) */
+			break;
+		case 7: /* RESP_DATA in Linux data */
+			mapped_type = RESP_DATA; /* Keep as RESP_DATA (7) */
+			break;
+		case 4: /* RESP_PEERNAME in Linux data */
+			mapped_type = RESP_PEERNAME; /* Keep as RESP_PEERNAME (4) */
+			break;
+		default:
+			/* For unknown types, keep original */
+			mapped_type = linux_type;
+			break;
+	}
+	
+	fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
+		current_tool, linux_type, mapped_type);
 	
 	return mapped_type;
 }
@@ -490,7 +528,7 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	/* Apply response type mapping for cross-platform compatibility */
 	int mapped_type = map_linux_response_type(tmp_type);
 	
-#if 0
+#if 1
 	fprintf(stderr, "DEBUG: read_response: expected type %d, got type %d, mapped to %d\n", type, tmp_type, mapped_type);
 	
 #endif
