@@ -71,7 +71,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		*local_size = copy_size;
 		return 0;
 	} else if (mapped_type == RESP_PROTO) {
-		/* Handle protocol - just copy as-is for now */
+		/* Handle protocol - just copy as-is */
 		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
 		memcpy(local_data, linux_data, copy_size);
 		*local_size = copy_size;

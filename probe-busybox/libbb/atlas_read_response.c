@@ -159,7 +159,7 @@ static int map_linux_response_type(int linux_type) {
 	mapped_type = linux_type;
 	
 	/* Tool-specific response type mapping */
-	if (strcmp(current_tool, "evtraceroute") == 0) {
+		if (strcmp(current_tool, "evtraceroute") == 0) {
 		/* Traceroute tool-specific mapping */
 		switch(linux_type) {
 			case 8: mapped_type = 8; break; /* RESP_ADDRINFO -> RESP_ADDRINFO */
@@ -169,8 +169,8 @@ static int map_linux_response_type(int linux_type) {
 			case 4: mapped_type = 4; break; /* RESP_PROTO -> RESP_PROTO */
 			case 1: mapped_type = 1; break; /* RESP_PACKET -> RESP_PACKET */
 			case 2: mapped_type = 2; break; /* RESP_PEERNAME -> RESP_PEERNAME */
-			case 5: mapped_type = 4; break; /* RESP_RCVDTTL -> RESP_PROTO */
-			case 6: mapped_type = 4; break; /* RESP_RCVDTCLASS (from data) -> RESP_PROTO (expected by evtraceroute) */
+			case 5: mapped_type = 5; break; /* RESP_RCVDTTL -> RESP_RCVDTTL */
+			case 6: mapped_type = 6; break; /* RESP_RCVDTCLASS -> RESP_RCVDTCLASS */
 			default: mapped_type = linux_type; break;
 		}
 	} else if (strcmp(current_tool, "evping") == 0) {
