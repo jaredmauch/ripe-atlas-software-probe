@@ -10,7 +10,7 @@
 #endif
 
 /* Linux-specific struct definitions for binary data compatibility */
-#ifdef __FreeBSD__
+#ifndef __linux__
 
 /* Linux sockaddr_in structure (different from FreeBSD) */
 struct linux_sockaddr_in {
@@ -53,7 +53,7 @@ struct linux_sockaddr {
 	char sa_data[14];      /* Address data */
 };
 
-#endif /* __FreeBSD__ */
+#endif /* !__linux__ */
 
 /* Response types for packet replay */
 #define RESP_PACKET	1
@@ -117,6 +117,7 @@ static int map_linux_response_type(int linux_type) {
 	return mapped_type;
 }
 
+#ifndef __linux__
 /* Convert Linux timeval to local OS timeval */
 static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_size,
                                           void *local_data, size_t *local_size)
@@ -138,7 +139,9 @@ static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_
 		*local_size = linux_size;
 	}
 }
+#endif /* !__linux__ */
 
+#ifndef __linux__
 /* Convert Linux addrinfo to local OS addrinfo */
 static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
@@ -175,7 +178,9 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 		*local_size = linux_size;
 	}
 }
+#endif /* !__linux__ */
 
+#ifndef __linux__
 /* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
 static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
 	local_sin->sin_family = linux_sin->sin_family;
@@ -192,8 +197,10 @@ static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 
 	local_sin6->sin6_addr = linux_sin6->sin6_addr;
 	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
 }
+#endif /* !__linux__ */
 
 
+#ifndef __linux__
 /* Convert Linux sockaddr to local OS sockaddr */
 static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
@@ -304,6 +311,7 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	memcpy(local_data, linux_data, copy_size);
 	*local_size = copy_size;
 }
+#endif /* !__linux__ */
 
 /* Check if file is JSON format and initialize if so */
 #ifdef CONFIG_HAVE_JSON_C
@@ -463,6 +471,7 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 			exit(1);
 		}
 		
+#ifndef __linux__
 		/* Use the new Linux data loader for proper conversion */
 		if (is_linux_datafile) {
 			load_linux_binary_data(type, temp_buffer, tmp_size, data, sizep);
@@ -476,6 +485,16 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 			memcpy(data, temp_buffer, tmp_size);
 			*sizep = tmp_size;
 		}
+#else
+		/* On Linux, just copy the data directly */
+		if (tmp_size > *sizep)
+		{
+			fprintf(stderr, "read_response: data bigger than buffer\n");
+			exit(1);
+		}
+		memcpy(data, temp_buffer, tmp_size);
+		*sizep = tmp_size;
+#endif
 	} else {
 		/* Regular data, read directly */
 		if (tmp_size > *sizep)
@@ -550,6 +569,7 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 			}
 		}
 		
+#ifndef __linux__
 		/* Use the new Linux data loader for proper conversion */
 		if (is_linux_datafile) {
 			load_linux_binary_data(type, temp_buffer, tmp_size, data, sizep);
@@ -564,6 +584,17 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 			memcpy(data, temp_buffer, tmp_size);
 			*sizep = tmp_size;
 		}
+#else
+		/* On Linux, just copy the data directly */
+		if (tmp_size > *sizep)
+		{
+			fprintf(stderr,
+				"read_response_file: data bigger than buffer\n");
+			exit(1);
+		}
+		memcpy(data, temp_buffer, tmp_size);
+		*sizep = tmp_size;
+#endif
 	} else {
 		/* Regular data, read directly */
 		if (tmp_size > *sizep)
