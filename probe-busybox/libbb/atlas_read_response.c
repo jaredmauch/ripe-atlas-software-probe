@@ -210,7 +210,6 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 		*local_size = linux_size;
 	}
 }
-#endif
 #endif /* !__linux__ */
 
 #ifndef __linux__
