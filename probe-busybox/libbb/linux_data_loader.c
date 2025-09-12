@@ -80,55 +80,6 @@ struct linux_addrinfo {
 
 /* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
 static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
-	local_sin->sin_family = linux_sin->sin_family;
-	local_sin->sin_port = linux_sin->sin_port;  /* Port is already in network byte order */
-	local_sin->sin_addr = linux_sin->sin_addr;  /* Address is already in network byte order */
-	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
-}
-
-/* Convert Linux addrinfo to local OS addrinfo */
-static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
-                                           void *local_data, size_t *local_size)
-{
-	const struct addrinfo *linux_ai = (const struct addrinfo *)linux_data;
-	struct addrinfo *local_ai = (struct addrinfo *)local_data;
-	
-	/* Clear the output buffer */
-	memset(local_data, 0, *local_size);
-	
-	if (linux_size >= sizeof(struct addrinfo) && *local_size >= sizeof(struct addrinfo)) {
-		/* Copy basic fields that are generally compatible */
-		local_ai->ai_flags = linux_ai->ai_flags;
-		local_ai->ai_family = linux_ai->ai_family;
-		local_ai->ai_socktype = linux_ai->ai_socktype;
-		local_ai->ai_protocol = linux_ai->ai_protocol;
-		local_ai->ai_addrlen = linux_ai->ai_addrlen;
-		
-		/* Handle canonical name - copy if present */
-		if (linux_ai->ai_canonname) {
-			size_t name_len = strlen(linux_ai->ai_canonname) + 1;
-			if (name_len <= 256) { /* Reasonable limit */
-				local_ai->ai_canonname = malloc(name_len);
-				if (local_ai->ai_canonname) {
-					strcpy(local_ai->ai_canonname, linux_ai->ai_canonname);
-				}
-			}
-		}
-		
-		/* ai_addr and ai_next are pointers - will be set by caller */
-		local_ai->ai_addr = NULL;
-		local_ai->ai_next = NULL;
-		
-		*local_size = sizeof(struct addrinfo);
-	} else {
-		/* Fallback: copy what we can */
-		memcpy(local_data, linux_data, linux_size);
-		*local_size = linux_size;
-	}
-}
-
-/* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
-static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
 	/* Convert Linux family value to FreeBSD family value */
 	/* Handle common address family values */
 	if (linux_sin->sin_family == 2 || linux_sin->sin_family == AF_INET) {
