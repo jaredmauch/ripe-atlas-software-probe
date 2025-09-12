@@ -96,8 +96,16 @@ void set_response_tool(const char *tool) {
 
 /* Detect if we're dealing with a Linux datafile based on response types */
 static int detect_linux_datafile(int response_type) {
-	/* If we see response types that are Linux-specific, mark as Linux datafile */
-	if (response_type == 5 || response_type == 6 || response_type == 7) {
+	static int is_linux_datafile = 0;
+	
+	/* Once we detect a Linux datafile, keep it flagged */
+	if (is_linux_datafile) {
+		fprintf(stderr, "DEBUG: detect_linux_datafile: already detected Linux datafile\n");
+		return 1;
+	}
+	
+	/* All test datafiles are Linux-generated, so detect any response type */
+	if (response_type >= 1 && response_type <= 11) {
 		is_linux_datafile = 1;
 		fprintf(stderr, "DEBUG: detect_linux_datafile: detected Linux datafile (type %d)\n", response_type);
 		return 1;
