@@ -179,31 +179,67 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 		}
 		/* Handle IPv6 addresses */
 		else if (family == AF_INET6 || family == 10 || family == 28) {
-			local_sin6->sin6_family = AF_INET6;
-			local_sin6->sin6_port = *(const uint16_t*)(data + 2);
-			memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
-			memcpy(&local_sin6->sin6_addr, data + 8, 16);
-			memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
-			*local_size = sizeof(struct sockaddr_in6);
+			if (*local_size >= sizeof(struct sockaddr_in6)) {
+				local_sin6->sin6_family = AF_INET6;
+				local_sin6->sin6_port = *(const uint16_t*)(data + 2);
+				memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
+				memcpy(&local_sin6->sin6_addr, data + 8, 16);
+				memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
+				*local_size = sizeof(struct sockaddr_in6);
+			} else {
+				/* Buffer too small for IPv6, convert to IPv4 if possible */
+				fprintf(stderr, "WARNING: IPv6 sockaddr too large for buffer (%zu < %zu), converting to IPv4\n", 
+					*local_size, sizeof(struct sockaddr_in6));
+				if (*local_size >= sizeof(struct sockaddr_in)) {
+					local_sin->sin_family = AF_INET;
+					local_sin->sin_port = *(const uint16_t*)(data + 2);
+					/* Use first 4 bytes of IPv6 address as IPv4 address */
+					memcpy(&local_sin->sin_addr, data + 8, 4);
+					memset(local_sin->sin_zero, 0, 8);
+					*local_size = sizeof(struct sockaddr_in);
+				} else {
+					*local_size = 0;
+				}
+			}
 			return;
 		}
 		/* Fallback: assume IPv4 based on size */
 		else if (linux_size <= 16) {
-			local_sin->sin_family = AF_INET;
-			local_sin->sin_port = *(const uint16_t*)(data + 2);
-			memcpy(&local_sin->sin_addr, data + 4, 4);
-			memset(local_sin->sin_zero, 0, 8);
-			*local_size = sizeof(struct sockaddr_in);
+			if (*local_size >= sizeof(struct sockaddr_in)) {
+				local_sin->sin_family = AF_INET;
+				local_sin->sin_port = *(const uint16_t*)(data + 2);
+				memcpy(&local_sin->sin_addr, data + 4, 4);
+				memset(local_sin->sin_zero, 0, 8);
+				*local_size = sizeof(struct sockaddr_in);
+			} else {
+				*local_size = 0;
+			}
 			return;
 		}
 		/* Fallback: assume IPv6 based on size */
 		else if (linux_size >= 28) {
-			local_sin6->sin6_family = AF_INET6;
-			local_sin6->sin6_port = *(const uint16_t*)(data + 2);
-			memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
-			memcpy(&local_sin6->sin6_addr, data + 8, 16);
-			memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
-			*local_size = sizeof(struct sockaddr_in6);
+			if (*local_size >= sizeof(struct sockaddr_in6)) {
+				local_sin6->sin6_family = AF_INET6;
+				local_sin6->sin6_port = *(const uint16_t*)(data + 2);
+				memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
+				memcpy(&local_sin6->sin6_addr, data + 8, 16);
+				memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
+				*local_size = sizeof(struct sockaddr_in6);
+			} else {
+				/* Buffer too small for IPv6, convert to IPv4 if possible */
+				fprintf(stderr, "WARNING: IPv6 sockaddr too large for buffer (%zu < %zu), converting to IPv4\n", 
+					*local_size, sizeof(struct sockaddr_in6));
+				if (*local_size >= sizeof(struct sockaddr_in)) {
+					local_sin->sin_family = AF_INET;
+					local_sin->sin_port = *(const uint16_t*)(data + 2);
+					/* Use first 4 bytes of IPv6 address as IPv4 address */
+					memcpy(&local_sin->sin_addr, data + 8, 4);
+					memset(local_sin->sin_zero, 0, 8);
+					*local_size = sizeof(struct sockaddr_in);
+				} else {
+					*local_size = 0;
+				}
+			}
 			return;
 		}
 	}
