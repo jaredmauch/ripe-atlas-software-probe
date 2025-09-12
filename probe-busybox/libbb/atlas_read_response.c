@@ -156,8 +156,8 @@ static int map_linux_response_type(int linux_type) {
 	
 	/* Map Linux response types to the response types expected by the test code */
 	/* Different tools expect different response types, so we need tool-specific mapping */
-	if (strcmp(current_tool, "evtdig") == 0) {
-		/* evtdig expects RESP_PACKET (1) where data file has RESP_DSTADDR (3) */
+	if (strcmp(current_tool, "evtdig") == 0 || strcmp(current_tool, "evping") == 0) {
+		/* evtdig and evping expect RESP_PACKET (1) where data file has RESP_DSTADDR (3) */
 		switch (linux_type) {
 			case 3: /* RESP_DSTADDR in Linux data - map to RESP_PACKET for evtdig */
 				mapped_type = RESP_PACKET; /* Map to RESP_PACKET (1) - evtdig expects this */
