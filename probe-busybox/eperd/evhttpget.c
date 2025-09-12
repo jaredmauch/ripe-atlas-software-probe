@@ -81,6 +81,9 @@ int evhttpget_main(int argc UNUSED_PARAM, char **argv)
 
 	INIT_G();
 
+	/* Set tool name for response type mapping */
+	set_response_tool("evhttpget");
+
 	/* Create libevent event base */
 	EventBase= event_base_new();
 	if (!EventBase)
