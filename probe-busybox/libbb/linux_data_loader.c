@@ -233,8 +233,9 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	/* Final fallback: direct copy with size limit */
 	{
 		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-	memcpy(local_data, linux_data, copy_size);
-	*local_size = copy_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+	}
 }
 
 /* Load and convert Linux binary data to local OS format */
