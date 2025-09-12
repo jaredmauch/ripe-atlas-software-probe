@@ -240,7 +240,8 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	if (linux_size >= sizeof(struct sockaddr_in)) {
 		if (linux_sin->sin_family == AF_INET || 
 		    linux_sin->sin_family == 2 ||  /* Common AF_INET value */
-		    linux_sin->sin_family == 0) {  /* Sometimes family is 0 in datafiles */
+		    linux_sin->sin_family == 0 ||  /* AF_UNSPEC = 0, assume IPv4 in sockaddr_in context */
+		    linux_sin->sin_family == AF_UNSPEC) {  /* AF_UNSPEC constant */
 			/* IPv4 address - convert Linux format to local format */
 			local_sin->sin_family = AF_INET;
 			local_sin->sin_port = linux_sin->sin_port;
@@ -255,7 +256,8 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 		if (linux_sin6->sin6_family == AF_INET6 || 
 		    linux_sin6->sin6_family == 10 ||  /* Linux AF_INET6 */
 		    linux_sin6->sin6_family == 28 ||  /* FreeBSD AF_INET6 */
-		    linux_sin6->sin6_family == 0) {   /* Sometimes family is 0 in datafiles */
+		    linux_sin6->sin6_family == 0 ||   /* AF_UNSPEC = 0, assume IPv6 in sockaddr_in6 context */
+		    linux_sin6->sin6_family == AF_UNSPEC) {  /* AF_UNSPEC constant */
 			/* IPv6 address - convert Linux format to local format */
 			local_sin6->sin6_family = AF_INET6;
 			local_sin6->sin6_port = linux_sin6->sin6_port;
