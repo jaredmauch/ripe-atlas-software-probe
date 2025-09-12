@@ -143,69 +143,8 @@ static int detect_linux_datafile(int response_type) {
 
 /* Map Linux response types to tool-specific types for cross-platform compatibility */
 static int map_linux_response_type(int linux_type) {
-	int mapped_type;
-	
-	/* Detect if this is a Linux datafile */
-	detect_linux_datafile(linux_type);
-	
-	if (!current_tool) {
-		fprintf(stderr, "DEBUG: map_linux_response_type: no current_tool set\n");
-		return linux_type; /* No mapping if tool not set */
-	}
-	
-	/* All datafiles are Linux, so always apply mapping */
-	
-	/* Map Linux response types to tool-specific response types */
-	mapped_type = linux_type;
-	
-	/* Tool-specific response type mapping */
-		if (strcmp(current_tool, "evtraceroute") == 0) {
-		/* Traceroute tool-specific mapping */
-		switch(linux_type) {
-			case 8: mapped_type = 8; break; /* RESP_ADDRINFO -> RESP_ADDRINFO */
-			case 9: mapped_type = 9; break; /* RESP_ADDRINFO_SA -> RESP_ADDRINFO_SA */
-			case 3: mapped_type = 3; break; /* RESP_SOCKNAME -> RESP_SOCKNAME */
-			case 7: mapped_type = 7; break; /* RESP_SENDTO -> RESP_SENDTO */
-			case 4: mapped_type = 4; break; /* RESP_PROTO -> RESP_PROTO */
-			case 1: mapped_type = 1; break; /* RESP_PACKET -> RESP_PACKET */
-			case 2: mapped_type = 2; break; /* RESP_PEERNAME -> RESP_PEERNAME */
-			case 5: mapped_type = 5; break; /* RESP_RCVDTTL -> RESP_RCVDTTL */
-			case 6: mapped_type = 6; break; /* RESP_RCVDTCLASS -> RESP_RCVDTCLASS */
-			default: mapped_type = linux_type; break;
-		}
-	} else if (strcmp(current_tool, "evping") == 0) {
-		/* Ping tool-specific mapping */
-		switch(linux_type) {
-			case 1: mapped_type = 1; break; /* RESP_PACKET -> RESP_PACKET */
-			case 2: mapped_type = 2; break; /* RESP_PEERNAME -> RESP_PEERNAME */
-			case 3: mapped_type = 3; break; /* RESP_SOCKNAME -> RESP_SOCKNAME */
-			case 4: mapped_type = 4; break; /* RESP_TTL -> RESP_TTL */
-			case 5: mapped_type = 5; break; /* RESP_DSTADDR -> RESP_DSTADDR */
-			case 6: mapped_type = 6; break; /* RESP_ADDRINFO -> RESP_ADDRINFO */
-			case 7: mapped_type = 7; break; /* RESP_ADDRINFO_SA -> RESP_ADDRINFO_SA */
-			default: mapped_type = linux_type; break;
-		}
-	} else if (strcmp(current_tool, "evhttpget") == 0) {
-		/* HTTP get tool-specific mapping */
-		switch(linux_type) {
-			case 1: mapped_type = 1; break; /* RESP_PACKET -> RESP_PACKET */
-			case 2: mapped_type = 2; break; /* RESP_SOCKNAME -> RESP_SOCKNAME */
-			case 3: mapped_type = 3; break; /* RESP_DSTADDR -> RESP_DSTADDR */
-			case 4: mapped_type = 4; break; /* RESP_READ_ERROR -> RESP_READ_ERROR */
-			default: mapped_type = linux_type; break;
-		}
-	} else {
-		/* For other tools, keep original types */
-		mapped_type = linux_type;
-	}
-	
-	/* Only show debug message if there's an actual mapping change */
-	if (mapped_type != linux_type) {
-		fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
-			current_tool, linux_type, mapped_type);
-	}
-	
-	return mapped_type;
+	/* No mapping needed - return original response type */
+	return linux_type;
 }
 
 #ifndef __linux__
@@ -550,8 +489,8 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 			exit(1);
 		}
 	}
-	/* Apply response type mapping for cross-platform compatibility */
-	mapped_type = map_linux_response_type(tmp_type);
+	/* No response type mapping needed - use original type */
+	mapped_type = tmp_type;
 	
 #if 0
 	fprintf(stderr, "DEBUG: read_response: expected type %d, got type %d, mapped to %d\n", type, tmp_type, mapped_type);
@@ -652,8 +591,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		fprintf(stderr, "read_response_file: error reading\n");
 		exit(1);
 	}
-	/* Apply response type mapping for cross-platform compatibility */
-	mapped_type = map_linux_response_type(tmp_type);
+	/* No response type mapping needed - use original type */
+	mapped_type = tmp_type;
 	
 	if (mapped_type != type)
 	{
