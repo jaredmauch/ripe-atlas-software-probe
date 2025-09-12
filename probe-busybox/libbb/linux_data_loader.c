@@ -78,45 +78,6 @@ struct linux_addrinfo {
 	struct addrinfo *ai_next; /* Next in list */
 };
 
-/* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
-static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
-	/* Convert Linux family value to FreeBSD family value */
-	/* Handle common address family values */
-	if (linux_sin->sin_family == 2 || linux_sin->sin_family == AF_INET) {
-		/* AF_INET = 2 (same on Linux and FreeBSD) */
-		local_sin->sin_family = AF_INET;
-	} else if (linux_sin->sin_family == 0 || linux_sin->sin_family == AF_UNSPEC) {
-		/* AF_UNSPEC = 0, but in sockaddr_in context, assume IPv4 */
-		local_sin->sin_family = AF_INET;
-	} else {
-		/* For other values, assume they're already correct for the target system */
-		local_sin->sin_family = linux_sin->sin_family;
-	}
-	local_sin->sin_port = linux_sin->sin_port;
-	local_sin->sin_addr = linux_sin->sin_addr;
-	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
-}
-
-/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
-static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
-	/* Convert Linux family value to FreeBSD family value */
-	/* Handle common address family values */
-	if (linux_sin6->sin6_family == 10 || linux_sin6->sin6_family == AF_INET6) {
-		/* Linux AF_INET6 = 10, FreeBSD AF_INET6 = 28 */
-		local_sin6->sin6_family = AF_INET6;
-	} else if (linux_sin6->sin6_family == 0 || linux_sin6->sin6_family == AF_UNSPEC) {
-		/* AF_UNSPEC = 0, but in sockaddr_in6 context, assume IPv6 */
-		local_sin6->sin6_family = AF_INET6;
-	} else {
-		/* For other values, assume they're already correct for the target system */
-		local_sin6->sin6_family = linux_sin6->sin6_family;
-	}
-	local_sin6->sin6_port = linux_sin6->sin6_port;
-	local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-	local_sin6->sin6_addr = linux_sin6->sin6_addr;
-	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-}
-
 /* Convert Linux addrinfo to local OS addrinfo */
 static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
@@ -270,8 +231,8 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	}
 	
 	/* Final fallback: direct copy with size limit */
-	size_t copy_size;
-	copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+	{
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
 	memcpy(local_data, linux_data, copy_size);
 	*local_size = copy_size;
 }
@@ -292,7 +253,8 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	
 	/* Map response type if needed */
 	extern const char *current_tool;
-	int mapped_type;
+	{
+		int mapped_type;
 	
 	mapped_type = response_type;
 	if (current_tool) {
@@ -415,6 +377,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		*local_size = linux_size;
 		return 0;
 	}
+	} /* End of mapped_type block */
 }
 
 #endif /* !__linux__ */
