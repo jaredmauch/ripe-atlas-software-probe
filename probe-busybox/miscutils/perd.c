@@ -266,6 +266,9 @@ int perd_main(int argc UNUSED_PARAM, char **argv)
 	xsetenv("SHELL", DEFAULT_SHELL); /* once, for all future children */
 	crondlog(LVL9 "crond (busybox "BB_VER") started, log level %d", LogLevel);
 
+	/* Initialize seed to a default value in case /dev/urandom is unavailable */
+	seed = (unsigned)time(NULL);
+
 	fd= open(URANDOM_DEV, O_RDONLY);
 
 	/* Best effort, just ignore errors */
