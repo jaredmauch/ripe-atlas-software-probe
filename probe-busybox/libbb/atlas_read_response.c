@@ -104,73 +104,7 @@ struct linux_dstaddr {
 	} addr;
 };
 
-/* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
-static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
-	local_sin->sin_family = linux_sin->sin_family;
-	local_sin->sin_port = linux_sin->sin_port;
-	local_sin->sin_addr = linux_sin->sin_addr;
-	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
-}
-
-/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
-static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
-	local_sin6->sin6_family = linux_sin6->sin6_family;
-	local_sin6->sin6_port = linux_sin6->sin6_port;
-	local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-	local_sin6->sin6_addr = linux_sin6->sin6_addr;
-	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-}
-
-/* Convert Linux addrinfo to local OS addrinfo */
-static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
-                                           void *local_data, size_t *local_size)
-{
-	const struct addrinfo *linux_ai = (const struct addrinfo *)linux_data;
-	struct addrinfo *local_ai = (struct addrinfo *)local_data;
-	
-	/* Clear the output buffer */
-	memset(local_data, 0, *local_size);
-	
-	if (linux_size >= sizeof(struct addrinfo) && *local_size >= sizeof(struct addrinfo)) {
-		/* Copy basic fields that are generally compatible */
-		local_ai->ai_flags = linux_ai->ai_flags;
-		local_ai->ai_family = linux_ai->ai_family;
-		local_ai->ai_socktype = linux_ai->ai_socktype;
-		local_ai->ai_protocol = linux_ai->ai_protocol;
-		local_ai->ai_addrlen = linux_ai->ai_addrlen;
-		
-		/* Handle canonical name - copy if present */
-		if (linux_ai->ai_canonname) {
-			size_t name_len = strlen(linux_ai->ai_canonname) + 1;
-			if (name_len <= 256) { /* Reasonable limit */
-				local_ai->ai_canonname = malloc(name_len);
-				if (local_ai->ai_canonname) {
-					strcpy(local_ai->ai_canonname, linux_ai->ai_canonname);
-				}
-			}
-		}
-		
-		/* ai_addr and ai_next are pointers - will be set by caller */
-		local_ai->ai_addr = NULL;
-		local_ai->ai_next = NULL;
-		
-		*local_size = sizeof(struct addrinfo);
-	} else {
-		/* Fallback: copy what we can */
-		memcpy(local_data, linux_data, linux_size);
-		*local_size = linux_size;
-	}
-}
-
-/* Convert Linux dstaddr to FreeBSD dstaddr */
-static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
-	local_dst->family = linux_dst->family;
-	if (linux_dst->family == AF_INET) {
-		local_dst->addr.ipv4 = linux_dst->addr.ipv4;
-	} else if (linux_dst->family == AF_INET6) {
-		local_dst->addr.ipv6 = linux_dst->addr.ipv6;
-	}
-}
+/* Note: Conversion functions moved to linux_data_loader.c to avoid duplication */
 
 #endif /* !__linux__ */
 
@@ -224,147 +158,9 @@ static off_t get_file_size(FILE *file) {
 }
 
 /* All datafiles are Linux-generated, no detection needed */
-static int detect_linux_datafile(int response_type) {
-	/* Suppress unused parameter warning */
-	(void)response_type;
-	return 1; /* Always return true - all datafiles are Linux */
-}
 
 #ifndef __linux__
-/* Convert Linux timeval to local OS timeval - unused for now */
-static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_size,
-                                           void *local_data, size_t *local_size)
-{
-	const struct timeval *linux_tv = (const struct timeval *)linux_data;
-	struct timeval *local_tv = (struct timeval *)local_data;
-	
-	/* Clear the output buffer */
-	memset(local_data, 0, *local_size);
-	
-	/* Direct copy - timeval structure is generally compatible across platforms */
-	if (linux_size >= sizeof(struct timeval)) {
-		local_tv->tv_sec = linux_tv->tv_sec;
-		local_tv->tv_usec = linux_tv->tv_usec;
-		*local_size = sizeof(struct timeval);
-	} else {
-		/* Fallback: copy what we can */
-		memcpy(local_data, linux_data, linux_size);
-		*local_size = linux_size;
-	}
-}
-
-
-/* Convert Linux sockaddr to local OS sockaddr - unused for now */
-static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
-                                           void *local_data, size_t *local_size)
-{
-	const struct sockaddr_in *linux_sin = (const struct sockaddr_in *)linux_data;
-	const struct sockaddr_in6 *linux_sin6 = (const struct sockaddr_in6 *)linux_data;
-	struct sockaddr_in *local_sin = (struct sockaddr_in *)local_data;
-	struct sockaddr_in6 *local_sin6 = (struct sockaddr_in6 *)local_data;
-	
-#ifdef __DEBUG__
-	fprintf(stderr, "DEBUG: convert_linux_sockaddr_to_local: linux_size=%zu, local_size=%zu\n", 
-		linux_size, *local_size);
-	fprintf(stderr, "DEBUG: Linux sin_family=%d, sin6_family=%d\n", 
-		linux_sin->sin_family, linux_sin6->sin6_family);
-#endif /* __DEBUG __ */
-	
-	/* Clear the output buffer */
-	memset(local_data, 0, *local_size);
-	
-	/* Handle IPv4 addresses - check multiple possible family values */
-	if (linux_size >= sizeof(struct sockaddr_in)) {
-		if (linux_sin->sin_family == AF_INET || 
-		    linux_sin->sin_family == 2 ||  /* Common AF_INET value */
-		    linux_sin->sin_family == 0) {  /* Sometimes family is 0 in datafiles */
-			/* IPv4 address - convert Linux format to local format */
-			local_sin->sin_family = AF_INET;
-			local_sin->sin_port = linux_sin->sin_port;
-			local_sin->sin_addr = linux_sin->sin_addr;
-			*local_size = sizeof(struct sockaddr_in);
-			return;
-		}
-	}
-	
-	/* Handle IPv6 addresses - check multiple possible family values */
-	if (linux_size >= sizeof(struct sockaddr_in6)) {
-		if (linux_sin6->sin6_family == AF_INET6 || 
-		    linux_sin6->sin6_family == 10 ||  /* Linux AF_INET6 */
-		    linux_sin6->sin6_family == 28 ||  /* FreeBSD AF_INET6 */
-		    linux_sin6->sin6_family == 0) {   /* Sometimes family is 0 in datafiles */
-			/* IPv6 address - convert Linux format to local format */
-			local_sin6->sin6_family = AF_INET6;
-			local_sin6->sin6_port = linux_sin6->sin6_port;
-			local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-			local_sin6->sin6_addr = linux_sin6->sin6_addr;
-			local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-			*local_size = sizeof(struct sockaddr_in6);
-			return;
-		}
-	}
-	
-	/* Enhanced inference based on data size and content */
-	if (linux_size >= 8) {
-		/* Try to parse as IPv4 if data length suggests it */
-		if (linux_size == sizeof(struct sockaddr_in)) {
-			/* Check if this looks like IPv4 data by examining the address bytes */
-						/* const uint8_t *addr_bytes = (const uint8_t *)&linux_sin->sin_addr; */
-			
-			/* Check if port is in big-endian or little-endian format */
-			uint16_t port_be = ntohs(linux_sin->sin_port);
-			uint16_t port_le = linux_sin->sin_port;
-			
-			/* Use the port that makes sense (reasonable port numbers) */
-			uint16_t port = (port_be > 0 && port_be != port_le) ? port_be : port_le;
-			
-			local_sin->sin_family = AF_INET;
-			local_sin->sin_port = htons(port);
-			local_sin->sin_addr = linux_sin->sin_addr;
-			*local_size = sizeof(struct sockaddr_in);
-			return;
-		}
-		/* Try to parse as IPv6 if data length suggests it */
-		else if (linux_size == sizeof(struct sockaddr_in6)) {
-			/* Check if this looks like IPv6 data by examining the address bytes */
-						/* const uint8_t *addr_bytes = (const uint8_t *)&linux_sin6->sin6_addr; */
-			
-			local_sin6->sin6_family = AF_INET6;
-			local_sin6->sin6_port = linux_sin6->sin6_port;
-			local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-			local_sin6->sin6_addr = linux_sin6->sin6_addr;
-			local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-			*local_size = sizeof(struct sockaddr_in6);
-			return;
-		}
-	}
-	
-	/* Enhanced fallback: try to detect address family from data content */
-	if (linux_size >= 16) {
-		/* Check if this might be IPv6 data (28 bytes typical) */
-		if (linux_size >= 28) {
-			/* Assume IPv6 and try to convert */
-			memcpy(local_sin6, linux_data, sizeof(struct sockaddr_in6));
-			local_sin6->sin6_family = AF_INET6;
-			*local_size = sizeof(struct sockaddr_in6);
-			return;
-		}
-		/* Check if this might be IPv4 data (16 bytes typical) */
-		else if (linux_size >= 16) {
-			/* Assume IPv4 and try to convert */
-			memcpy(local_sin, linux_data, sizeof(struct sockaddr_in));
-			local_sin->sin_family = AF_INET;
-			*local_size = sizeof(struct sockaddr_in);
-			return;
-		}
-	}
-	
-	/* Final fallback: direct copy with size limit */
-	size_t copy_size;
-	copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-	memcpy(local_data, linux_data, copy_size);
-	*local_size = copy_size;
-}
+/* Note: Conversion functions moved to linux_data_loader.c to avoid duplication */
 #endif /* !__linux__ */
 
 /* Check if file is JSON format and initialize if so */
@@ -528,13 +324,15 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	
 	/* Handle data structures that need platform conversion */
 	if (is_linux_datafile) {
+		char *linux_buffer;
+		
 		/* Allocate buffer for Linux data conversion with reasonable limits */
 		if (tmp_size > 1024 * 1024) { /* 1MB limit */
 			fprintf(stderr, "ERROR: Linux data too large (%zu > 1MB)\n", tmp_size);
 			exit(1);
 		}
 		
-		char *linux_buffer = malloc(tmp_size);
+		linux_buffer = malloc(tmp_size);
 		if (!linux_buffer) {
 			fprintf(stderr, "ERROR: Failed to allocate %zu bytes for Linux data\n", tmp_size);
 			exit(1);
@@ -593,9 +391,10 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 	
 	/* All datafiles are Linux on FreeBSD */
 	int is_linux_datafile = 1;
+	off_t file_size;
 	
 	/* Get file size once at the beginning */
-	off_t file_size = get_file_size(file);
+	file_size = get_file_size(file);
 
 #ifdef CONFIG_HAVE_JSON_C
 	if (using_json) {
@@ -637,6 +436,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 	
 	/* Handle data structures that need platform conversion */
 	if (is_linux_datafile) {
+		char *linux_buffer;
+		
 		/* Use already-obtained file size to validate data size */
 		if (tmp_size > file_size) {
 			fprintf(stderr, "ERROR: Data size %zu exceeds file size %ld\n", tmp_size, file_size);
@@ -649,7 +450,7 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 			exit(1);
 		}
 		
-		char *linux_buffer = malloc(tmp_size);
+		linux_buffer = malloc(tmp_size);
 		if (!linux_buffer) {
 			fprintf(stderr, "ERROR: Failed to allocate %zu bytes for Linux data\n", tmp_size);
 			exit(1);
