@@ -121,12 +121,9 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 
 /* Convert Linux dstaddr to FreeBSD dstaddr */
 static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
-	local_dst->family = linux_dst->family;
-	if (linux_dst->family == AF_INET) {
-		local_dst->addr.ipv4 = linux_dst->addr.ipv4;
-	} else if (linux_dst->family == AF_INET6) {
-		local_dst->addr.ipv6 = linux_dst->addr.ipv6;
-	}
+	/* Never copy anonymous structures - abort if we encounter one */
+	fprintf(stderr, "ERROR: Attempted to copy anonymous structure - this is unsafe!\n");
+	abort();
 }
 
 /* Convert Linux sockaddr to local OS sockaddr - comprehensive conversion */
@@ -214,17 +211,24 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	if (linux_size >= 16) {
 		/* Check if this might be IPv6 data (28 bytes typical) */
 		if (linux_size >= 28) {
-			/* Assume IPv6 and try to convert */
-			memcpy(local_sin6, linux_data, sizeof(struct sockaddr_in6));
+			/* Assume IPv6 and try to convert - copy field by field */
+			const uint8_t *data = (const uint8_t*)linux_data;
 			local_sin6->sin6_family = AF_INET6;
+			local_sin6->sin6_port = *(const uint16_t*)(data + 2);
+			memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
+			memcpy(&local_sin6->sin6_addr, data + 8, 16);
+			memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
 			*local_size = sizeof(struct sockaddr_in6);
 			return;
 		}
 		/* Check if this might be IPv4 data (16 bytes typical) */
 		else if (linux_size >= 16) {
-			/* Assume IPv4 and try to convert */
-			memcpy(local_sin, linux_data, sizeof(struct sockaddr_in));
+			/* Assume IPv4 and try to convert - copy field by field */
+			const uint8_t *data = (const uint8_t*)linux_data;
 			local_sin->sin_family = AF_INET;
+			local_sin->sin_port = *(const uint16_t*)(data + 2);
+			memcpy(&local_sin->sin_addr, data + 4, 4);
+			memset(local_sin->sin_zero, 0, 8);
 			*local_size = sizeof(struct sockaddr_in);
 			return;
 		}
@@ -277,20 +281,17 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	else if (mapped_type == 2) { /* RESP_SOCKNAME */
 		/* Handle socket name - convert Linux sockaddr to local sockaddr */
-		printf("DEBUG: Converting sockaddr structure\n");
-		convert_linux_sockaddr_to_local(linux_data, linux_size, local_data, local_size);
-		return 0;
+		/* Never copy anonymous structures - abort if we encounter one */
+		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (sockaddr) - this is unsafe!\n");
+		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
+		abort();
 	}
 	else if (mapped_type == 3) { /* RESP_DSTADDR */
 		/* Handle destination address - convert Linux dstaddr to local dstaddr */
-		if (linux_size >= sizeof(struct linux_dstaddr) && *local_size >= sizeof(struct linux_dstaddr)) {
-			convert_linux_dstaddr_to_local((const struct linux_dstaddr*)linux_data, (struct linux_dstaddr*)local_data);
-			*local_size = sizeof(struct linux_dstaddr);
-		} else {
-			fprintf(stderr, "ERROR: Dstaddr data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
-			return -1;
-		}
-		return 0;
+		/* Never copy anonymous structures - abort if we encounter one */
+		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (dstaddr) - this is unsafe!\n");
+		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
+		abort();
 	}
 	else if (mapped_type == 4) { /* RESP_PEERNAME, RESP_PROTO, RESP_TTL, RESP_TIMEOFDAY, RESP_READ_ERROR, RESP_N_RESOLV */
 		/* Handle simple integer/byte data - just copy */
@@ -334,18 +335,10 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	else if (mapped_type == 8) { /* RESP_ADDRINFO, RESP_CMSG */
 		/* Handle addrinfo/control message - convert or copy */
-		if (linux_size >= sizeof(struct linux_addrinfo) && *local_size >= sizeof(struct addrinfo)) {
-			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
-		} else {
-			/* Fallback: just copy */
-			if (linux_size > *local_size) {
-				fprintf(stderr, "ERROR: Addrinfo/cmsg data too large (%zu > %zu)\n", linux_size, *local_size);
-				return -1;
-			}
-			memcpy(local_data, linux_data, linux_size);
-			*local_size = linux_size;
-		}
-		return 0;
+		/* Never copy anonymous structures - abort if we encounter one */
+		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (addrinfo) - this is unsafe!\n");
+		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
+		abort();
 	}
 	else if (mapped_type == 9) { /* RESP_ADDRINFO_SA, RESP_TIMEOUT */
 		/* Handle addrinfo_sa/timeout data - just copy */
@@ -359,13 +352,10 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	else if (mapped_type == 10) { /* RESP_ADDRINFO_10 */
 		/* Handle addrinfo type 10 - convert Linux addrinfo to local addrinfo */
-		if (linux_size >= sizeof(struct linux_addrinfo) && *local_size >= sizeof(struct addrinfo)) {
-			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
-		} else {
-			fprintf(stderr, "ERROR: Addrinfo data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
-			return -1;
-		}
-		return 0;
+		/* Never copy anonymous structures - abort if we encounter one */
+		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (addrinfo type 10) - this is unsafe!\n");
+		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
+		abort();
 	}
 	else {
 		/* Unknown response type - copy what we can */
