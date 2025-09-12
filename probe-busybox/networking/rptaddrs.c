@@ -254,7 +254,7 @@ static int setup_ipv4_rpt(FILE *of)
 	struct ifconf ifconf;
 	struct ifreq ifreq1;
 	struct ifreq ifreq[MAX_INF];
-	char infname[20];
+	char infname[IF_NAMESIZE + 4]; /* IF_NAMESIZE + some extra space */
 	char line[256];
 
 	s= socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -315,7 +315,7 @@ static int setup_ipv4_rpt(FILE *of)
 
 	while (fgets(line, sizeof(line), in_file) != NULL)
 	{
-		sscanf(line, "%16s %x %x %x %u %u %u %x",
+		sscanf(line, "%15s %x %x %x %u %u %u %x", /* IF_NAMESIZE-1 = 15 */
 			infname, &dest, &gateway, &flags, &refcnt, &use, 
 			&metric, &mask);
 		in_addr.s_addr= dest;
@@ -401,7 +401,7 @@ static int setup_ipv6_rpt(FILE *of, char *filename)
 	char *nh6out = NULL;
 	char dst6p[8][5];
 	char nh6p[8][5];
-	char iface[16], flags[16];
+	char iface[IF_NAMESIZE], flags[IF_NAMESIZE];
 	char Scope[32];
 	unsigned int scope, dad_status, if_idx;
 	unsigned int iflags, metric, refcnt, use, prefix_len, slen;
@@ -423,7 +423,7 @@ static int setup_ipv6_rpt(FILE *of, char *filename)
 		return -1;
 	}
 	n = 0;
-	while ((r = fscanf(in_file, "%4s%4s%4s%4s%4s%4s%4s%4s %08x %02x %02x %02x %20s\n",
+	while ((r = fscanf(in_file, "%4s%4s%4s%4s%4s%4s%4s%4s %08x %02x %02x %02x %15s\n", /* IF_NAMESIZE-1 = 15 */
 					dst6p[0], dst6p[1], dst6p[2]
 					, dst6p[3], dst6p[4], dst6p[5]
 					, dst6p[6], dst6p[7], &if_idx, &prefix_len
