@@ -186,15 +186,17 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 		exit(1);
 	} else if (strcmp(app_tool, "evtdig") == 0) {
 		/* evtdig expects: 1, 2, 8, 3, 8, 9 */
+		/* Linux datafile has: 10, ... */
 		switch (linux_type) {
 			case 1: return 1; /* RESP_PACKET */
 			case 2: return 2; /* RESP_PEERNAME */
-			case 8: return 8; /* RESP_CMSG */
 			case 3: return 3; /* RESP_SOCKNAME */
+			case 8: return 8; /* RESP_CMSG */
 			case 9: return 9; /* RESP_ADDRINFO_SA */
+			case 10: return 1; /* RESP_PACKET (map type 10 to type 1) */
 			default: 
 				fprintf(stderr, "ERROR: evtdig got unexpected Linux type %d\n", linux_type);
-				fprintf(stderr, "ERROR: Expected types: 1, 2, 8, 3, 9 - stopping test\n");
+				fprintf(stderr, "ERROR: Expected types: 1, 2, 3, 8, 9, 10 - stopping test\n");
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evping") == 0) {
@@ -216,28 +218,32 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 		}
 	} else if (strcmp(app_tool, "evntp") == 0) {
 		/* evntp expects: 4, 1, 5, 3, 8, 9, 6 */
+		/* Linux datafile has: 3, 2, 1, ... */
 		switch (linux_type) {
-			case 4: return 4; /* RESP_TIMEOFDAY */
 			case 1: return 1; /* RESP_PACKET */
-			case 5: return 5; /* RESP_DSTADDR */
+			case 2: return 3; /* RESP_PEERNAME -> RESP_SOCKNAME */
 			case 3: return 3; /* RESP_SOCKNAME */
+			case 4: return 4; /* RESP_TIMEOFDAY */
+			case 5: return 5; /* RESP_DSTADDR */
+			case 6: return 6; /* RESP_RCVDTCLASS */
 			case 8: return 8; /* RESP_ADDRINFO */
 			case 9: return 9; /* RESP_ADDRINFO_SA */
-			case 6: return 6; /* RESP_RCVDTCLASS */
 			default: 
 				fprintf(stderr, "ERROR: evntp got unexpected Linux type %d\n", linux_type);
-				fprintf(stderr, "ERROR: Expected types: 4, 1, 5, 3, 8, 9, 6 - stopping test\n");
+				fprintf(stderr, "ERROR: Expected types: 1, 2, 3, 4, 5, 6, 8, 9 - stopping test\n");
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evhttpget") == 0 || strcmp(app_tool, "evsslgetcert") == 0) {
 		/* evhttpget/evsslgetcert expect: 1, 3, 5 */
+		/* Linux datafile has: 3, 2, 1, ... */
 		switch (linux_type) {
 			case 1: return 1; /* RESP_PACKET */
+			case 2: return 3; /* RESP_PEERNAME -> RESP_SOCKNAME */
 			case 3: return 3; /* RESP_SOCKNAME */
 			case 5: return 5; /* RESP_DSTADDR */
 			default: 
 				fprintf(stderr, "ERROR: %s got unexpected Linux type %d\n", app_tool, linux_type);
-				fprintf(stderr, "ERROR: Expected types: 1, 3, 5 - stopping test\n");
+				fprintf(stderr, "ERROR: Expected types: 1, 2, 3, 5 - stopping test\n");
 				exit(1);
 		}
 	}
