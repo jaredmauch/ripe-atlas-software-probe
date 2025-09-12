@@ -94,24 +94,10 @@ void set_response_tool(const char *tool) {
 	fprintf(stderr, "DEBUG: set_response_tool: tool set to '%s'\n", tool);
 }
 
-/* Detect if we're dealing with a Linux datafile based on response types */
+/* All datafiles are Linux-generated, no detection needed */
 static int detect_linux_datafile(int response_type) {
-	static int is_linux_datafile = 0;
-	
-	/* Once we detect a Linux datafile, keep it flagged */
-	if (is_linux_datafile) {
-		fprintf(stderr, "DEBUG: detect_linux_datafile: already detected Linux datafile\n");
-		return 1;
-	}
-	
-	/* All test datafiles are Linux-generated, so detect any response type */
-	if (response_type >= 1 && response_type <= 11) {
-		is_linux_datafile = 1;
-		fprintf(stderr, "DEBUG: detect_linux_datafile: detected Linux datafile (type %d)\n", response_type);
-		return 1;
-	}
-	fprintf(stderr, "DEBUG: detect_linux_datafile: type %d, is_linux_datafile=%d\n", response_type, is_linux_datafile);
-	return is_linux_datafile;
+	fprintf(stderr, "DEBUG: detect_linux_datafile: treating as Linux datafile (type %d)\n", response_type);
+	return 1; /* Always return true - all datafiles are Linux */
 }
 
 /* Map Linux response types to tool-specific types for cross-platform compatibility */
@@ -124,11 +110,7 @@ static int map_linux_response_type(int linux_type) {
 		return linux_type; /* No mapping if tool not set */
 	}
 	
-	/* Only apply mapping if we detected a Linux datafile */
-	if (!is_linux_datafile) {
-		fprintf(stderr, "DEBUG: map_linux_response_type: not a Linux datafile\n");
-		return linux_type;
-	}
+	/* All datafiles are Linux, so always apply mapping */
 	
 	fprintf(stderr, "DEBUG: map_linux_response_type: mapping Linux type %d for tool %s\n", linux_type, current_tool);
 	
