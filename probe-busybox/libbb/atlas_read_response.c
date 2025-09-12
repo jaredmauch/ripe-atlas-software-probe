@@ -497,6 +497,8 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 			fprintf(stderr, "read_response: error reading\n");
 			exit(1);
 		}
+		/* Convert from network byte order to host byte order */
+		tmp_type = ntohl(tmp_type);
 	}
 	/* No response type mapping needed - use original type */
 	mapped_type = tmp_type;
@@ -517,6 +519,8 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 		fprintf(stderr, "read_response: error reading\n");
 		exit(1);
 	}
+	/* Convert from network byte order to host byte order */
+	tmp_size = ntohl(tmp_size);
 	
 	/* Handle data structures that need platform conversion */
 	if (is_linux_datafile && tmp_size <= sizeof(temp_buffer)) {
@@ -595,11 +599,13 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		tmp_type= stored_type;
 		got_type= 0;
 	}
-	else if (fread(&tmp_type, sizeof(tmp_type), 1, file) != 1)
+	else 	if (fread(&tmp_type, sizeof(tmp_type), 1, file) != 1)
 	{
 		fprintf(stderr, "read_response_file: error reading\n");
 		exit(1);
 	}
+	/* Convert from network byte order to host byte order */
+	tmp_type = ntohl(tmp_type);
 	/* No response type mapping needed - use original type */
 	mapped_type = tmp_type;
 	
@@ -615,6 +621,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		fprintf(stderr, "read_response_file: error reading\n");
 		exit(1);
 	}
+	/* Convert from network byte order to host byte order */
+	tmp_size = ntohl(tmp_size);
 	
 	/* Handle data structures that need platform conversion */
 	if (is_linux_datafile && tmp_size <= sizeof(temp_buffer)) {
