@@ -29,6 +29,8 @@
 
 /* Application-specific response type mapping based on calling application */
 int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
+	/* Suppress unused parameter warning */
+	(void)app_tool;
 	/* No mapping needed - return original type */
 	return linux_type;
 }
@@ -69,18 +71,10 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		*local_size = copy_size;
 		return 0;
 	} else if (mapped_type == RESP_PROTO) {
-		/* Handle protocol - convert Linux proto to FreeBSD proto */
-		if (linux_size >= sizeof(struct linux_proto) && *local_size >= sizeof(uint8_t)) {
-			const struct linux_proto *linux_proto = (const struct linux_proto*)linux_data;
-			uint8_t *local_proto = (uint8_t*)local_data;
-			*local_proto = linux_proto->protocol;
-			*local_size = sizeof(uint8_t);
-		} else {
-			/* Fallback: just copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
-		}
+		/* Handle protocol - just copy as-is for now */
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
 		return 0;
 	} else {
 		/* For other types, just copy the data as-is */

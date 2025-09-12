@@ -228,7 +228,8 @@
 
 /* Platform-specific function wrappers */
 #ifdef __FreeBSD__
-/* FreeBSD-specific socket option handling */
+/* FreeBSD-specific socket option handling - unused for now */
+#if 0
 static inline int set_ipv6_unicast_hops(int sock, int hops) {
     return setsockopt(sock, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &hops, sizeof(hops));
 }
@@ -244,6 +245,7 @@ static inline int set_ip_ttl(int sock, int ttl) {
 static inline int set_ip_mtu_discover(int sock, int value) {
     return setsockopt(sock, IPPROTO_IP, IP_MTU_DISCOVER, &value, sizeof(value));
 }
+#endif
 #else
 /* Linux and other systems */
 static inline int set_ipv6_unicast_hops(int sock, int hops) {

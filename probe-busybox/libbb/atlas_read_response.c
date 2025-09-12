@@ -136,11 +136,15 @@ void set_response_tool(const char *tool) {
 
 /* All datafiles are Linux-generated, no detection needed */
 static int detect_linux_datafile(int response_type) {
+	/* Suppress unused parameter warning */
+	(void)response_type;
 	return 1; /* Always return true - all datafiles are Linux */
 }
 
 /* Map Linux response types to tool-specific types for cross-platform compatibility */
 static int map_linux_response_type(int linux_type) {
+	int mapped_type;
+	
 	/* Detect if this is a Linux datafile */
 	detect_linux_datafile(linux_type);
 	
@@ -152,7 +156,7 @@ static int map_linux_response_type(int linux_type) {
 	/* All datafiles are Linux, so always apply mapping */
 	
 	/* Map Linux response types to tool-specific response types */
-	int mapped_type = linux_type;
+	mapped_type = linux_type;
 	
 	/* Tool-specific response type mapping */
 	if (strcmp(current_tool, "evtraceroute") == 0) {
@@ -202,9 +206,10 @@ static int map_linux_response_type(int linux_type) {
 }
 
 #ifndef __linux__
-/* Convert Linux timeval to local OS timeval */
+/* Convert Linux timeval to local OS timeval - unused for now */
+#if 0
 static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_size,
-                                          void *local_data, size_t *local_size)
+                                           void *local_data, size_t *local_size)
 {
 	const struct timeval *linux_tv = (const struct timeval *)linux_data;
 	struct timeval *local_tv = (struct timeval *)local_data;
@@ -223,10 +228,12 @@ static void convert_linux_timeval_to_local(const void *linux_data, size_t linux_
 		*local_size = linux_size;
 	}
 }
+#endif
 #endif /* !__linux__ */
 
 #ifndef __linux__
-/* Convert Linux addrinfo to local OS addrinfo */
+/* Convert Linux addrinfo to local OS addrinfo - unused for now */
+#if 0
 static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
 {
@@ -262,10 +269,12 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 		*local_size = linux_size;
 	}
 }
+#endif
 #endif /* !__linux__ */
 
 #ifndef __linux__
-/* Convert Linux sockaddr_in to FreeBSD sockaddr_in */
+/* Convert Linux sockaddr_in to FreeBSD sockaddr_in - unused for now */
+#if 0
 static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *linux_sin, struct sockaddr_in *local_sin) {
 	local_sin->sin_family = linux_sin->sin_family;
 	local_sin->sin_port = linux_sin->sin_port;
@@ -273,7 +282,8 @@ static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *l
 	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
 }
 
-/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
+/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 - unused for now */
+#if 0
 static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
 	local_sin6->sin6_family = linux_sin6->sin6_family;
 	local_sin6->sin6_port = linux_sin6->sin6_port;
@@ -285,7 +295,8 @@ static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 
 
 
 #ifndef __linux__
-/* Convert Linux sockaddr to local OS sockaddr */
+/* Convert Linux sockaddr to local OS sockaddr - unused for now */
+#if 0
 static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
 {
@@ -340,14 +351,14 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 		/* Try to parse as IPv4 if data length suggests it */
 		if (linux_size == sizeof(struct sockaddr_in)) {
 			/* Check if this looks like IPv4 data by examining the address bytes */
-			const uint8_t *addr_bytes = (const uint8_t *)&linux_sin->sin_addr;
+						/* const uint8_t *addr_bytes = (const uint8_t *)&linux_sin->sin_addr; */
 			
 			/* Check if port is in big-endian or little-endian format */
 			uint16_t port_be = ntohs(linux_sin->sin_port);
 			uint16_t port_le = linux_sin->sin_port;
 			
 			/* Use the port that makes sense (reasonable port numbers) */
-			uint16_t port = (port_be > 0 && port_be < 65536 && port_be != port_le) ? port_be : port_le;
+			uint16_t port = (port_be > 0 && port_be != port_le) ? port_be : port_le;
 			
 			local_sin->sin_family = AF_INET;
 			local_sin->sin_port = htons(port);
@@ -358,7 +369,7 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 		/* Try to parse as IPv6 if data length suggests it */
 		else if (linux_size == sizeof(struct sockaddr_in6)) {
 			/* Check if this looks like IPv6 data by examining the address bytes */
-			const uint8_t *addr_bytes = (const uint8_t *)&linux_sin6->sin6_addr;
+						/* const uint8_t *addr_bytes = (const uint8_t *)&linux_sin6->sin6_addr; */
 			
 			local_sin6->sin6_family = AF_INET6;
 			local_sin6->sin6_port = linux_sin6->sin6_port;
@@ -391,10 +402,12 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 	}
 	
 	/* Final fallback: direct copy with size limit */
-	size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+	size_t copy_size;
+	copy_size = (linux_size < *local_size) ? linux_size : *local_size;
 	memcpy(local_data, linux_data, copy_size);
 	*local_size = copy_size;
 }
+#endif
 #endif /* !__linux__ */
 
 /* Check if file is JSON format and initialize if so */
@@ -532,7 +545,8 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 		}
 	}
 	/* Apply response type mapping for cross-platform compatibility */
-	int mapped_type = map_linux_response_type(tmp_type);
+	int mapped_type;
+	mapped_type = map_linux_response_type(tmp_type);
 	
 #if 0
 	fprintf(stderr, "DEBUG: read_response: expected type %d, got type %d, mapped to %d\n", type, tmp_type, mapped_type);
@@ -633,7 +647,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		exit(1);
 	}
 	/* Apply response type mapping for cross-platform compatibility */
-	int mapped_type = map_linux_response_type(tmp_type);
+	int mapped_type;
+	mapped_type = map_linux_response_type(tmp_type);
 	
 	if (mapped_type != type)
 	{
