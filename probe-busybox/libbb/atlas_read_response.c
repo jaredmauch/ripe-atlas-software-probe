@@ -155,17 +155,36 @@ static int map_linux_response_type(int linux_type) {
 	int mapped_type = linux_type;
 	
 	/* Map Linux response types to the response types expected by the test code */
-	/* For now, keep original response types - no mapping needed */
-	switch (linux_type) {
-		case 10: /* Response type 10 in Linux data - keep as 10 */
-			mapped_type = 10; /* Keep as 10 - test expects this */
-			break;
-		case 11: /* Response type 11 in Linux data - keep as 11 */
-			mapped_type = 11; /* Keep as 11 - test expects this */
-			break;
-		case 3: /* RESP_DSTADDR in Linux data - keep as RESP_DSTADDR (3) */
-			mapped_type = RESP_DSTADDR; /* Keep as RESP_DSTADDR (3) - test expects this */
-			break;
+	/* Some tools expect different response types than what's in the data files */
+	if (strcmp(current_tool, "evping") == 0) {
+		/* evping expects RESP_PACKET (1) where data file has RESP_DSTADDR (3) */
+		switch (linux_type) {
+			case 3: /* RESP_DSTADDR in Linux data - map to RESP_PACKET for evping */
+				mapped_type = RESP_PACKET; /* Map to RESP_PACKET (1) - evping expects this */
+				break;
+			case 10: /* Response type 10 in Linux data - keep as 10 */
+				mapped_type = 10; /* Keep as 10 - evping expects this */
+				break;
+			case 11: /* Response type 11 in Linux data - keep as 11 */
+				mapped_type = 11; /* Keep as 11 - evping expects this */
+				break;
+			default:
+				/* For other types, keep original */
+				mapped_type = linux_type;
+				break;
+		}
+	} else {
+		/* For other tools, keep original response types */
+		switch (linux_type) {
+			case 10: /* Response type 10 in Linux data - keep as 10 */
+				mapped_type = 10; /* Keep as 10 - test expects this */
+				break;
+			case 11: /* Response type 11 in Linux data - keep as 11 */
+				mapped_type = 11; /* Keep as 11 - test expects this */
+				break;
+			case 3: /* RESP_DSTADDR in Linux data - keep as RESP_DSTADDR (3) */
+				mapped_type = RESP_DSTADDR; /* Keep as RESP_DSTADDR (3) - test expects this */
+				break;
 		case 1: /* RESP_PACKET in Linux data */
 			mapped_type = RESP_PACKET; /* Keep as RESP_PACKET (1) */
 			break;
@@ -188,6 +207,7 @@ static int map_linux_response_type(int linux_type) {
 			/* For unknown types, keep original */
 			mapped_type = linux_type;
 			break;
+		}
 	}
 	
 	fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
