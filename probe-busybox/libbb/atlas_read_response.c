@@ -166,7 +166,7 @@ static int map_linux_response_type(int linux_type) {
 			case 1: mapped_type = 1; break; /* RESP_PACKET -> RESP_PACKET */
 			case 2: mapped_type = 2; break; /* RESP_PEERNAME -> RESP_PEERNAME */
 			case 5: mapped_type = 4; break; /* RESP_RCVDTTL -> RESP_PROTO */
-			case 6: mapped_type = 6; break; /* RESP_RCVDTCLASS -> RESP_RCVDTCLASS */
+			case 6: mapped_type = 4; break; /* RESP_RCVDTCLASS (from data) -> RESP_PROTO (expected by evtraceroute) */
 			default: mapped_type = linux_type; break;
 		}
 	} else if (strcmp(current_tool, "evping") == 0) {
