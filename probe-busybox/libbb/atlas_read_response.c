@@ -155,59 +155,39 @@ static int map_linux_response_type(int linux_type) {
 	int mapped_type = linux_type;
 	
 	/* Map Linux response types to the response types expected by the test code */
-	/* Different tools expect different response types, so we need tool-specific mapping */
-	if (strcmp(current_tool, "evtdig") == 0 || strcmp(current_tool, "evping") == 0) {
-		/* evtdig and evping expect RESP_PACKET (1) where data file has RESP_DSTADDR (3) */
-		switch (linux_type) {
-			case 3: /* RESP_DSTADDR in Linux data - map to RESP_PACKET for evtdig */
-				mapped_type = RESP_PACKET; /* Map to RESP_PACKET (1) - evtdig expects this */
-				break;
-			case 10: /* Response type 10 in Linux data - keep as 10 */
-				mapped_type = 10; /* Keep as 10 - evtdig expects this */
-				break;
-			case 11: /* Response type 11 in Linux data - keep as 11 */
-				mapped_type = 11; /* Keep as 11 - evtdig expects this */
-				break;
-			default:
-				/* For other types, keep original */
-				mapped_type = linux_type;
-				break;
-		}
-	} else {
-		/* For other tools (evhttpget, evntp, etc.), keep original response types */
-		switch (linux_type) {
-			case 10: /* Response type 10 in Linux data - keep as 10 */
-				mapped_type = 10; /* Keep as 10 - test expects this */
-				break;
-			case 11: /* Response type 11 in Linux data - keep as 11 */
-				mapped_type = 11; /* Keep as 11 - test expects this */
-				break;
-			case 3: /* RESP_DSTADDR in Linux data - keep as RESP_DSTADDR (3) */
-				mapped_type = RESP_DSTADDR; /* Keep as RESP_DSTADDR (3) - other tools expect this */
-				break;
-			case 1: /* RESP_PACKET in Linux data */
-				mapped_type = RESP_PACKET; /* Keep as RESP_PACKET (1) */
-				break;
-			case 2: /* RESP_SOCKNAME in Linux data */
-				mapped_type = RESP_SOCKNAME; /* Keep as RESP_SOCKNAME (2) */
-				break;
-			case 8: /* RESP_CMSG in Linux data */
-				mapped_type = RESP_CMSG; /* Keep as RESP_CMSG (8) */
-				break;
-			case 6: /* RESP_LENGTH in Linux data */
-				mapped_type = RESP_LENGTH; /* Keep as RESP_LENGTH (6) */
-				break;
-			case 7: /* RESP_DATA in Linux data */
-				mapped_type = RESP_DATA; /* Keep as RESP_DATA (7) */
-				break;
-			case 4: /* RESP_PEERNAME in Linux data */
-				mapped_type = RESP_PEERNAME; /* Keep as RESP_PEERNAME (4) */
-				break;
-			default:
-				/* For unknown types, keep original */
-				mapped_type = linux_type;
-				break;
-		}
+	/* For now, keep original response types - no mapping needed */
+	switch (linux_type) {
+		case 10: /* Response type 10 in Linux data - keep as 10 */
+			mapped_type = 10; /* Keep as 10 - test expects this */
+			break;
+		case 11: /* Response type 11 in Linux data - keep as 11 */
+			mapped_type = 11; /* Keep as 11 - test expects this */
+			break;
+		case 3: /* RESP_DSTADDR in Linux data - keep as RESP_DSTADDR (3) */
+			mapped_type = RESP_DSTADDR; /* Keep as RESP_DSTADDR (3) - test expects this */
+			break;
+		case 1: /* RESP_PACKET in Linux data */
+			mapped_type = RESP_PACKET; /* Keep as RESP_PACKET (1) */
+			break;
+		case 2: /* RESP_SOCKNAME in Linux data */
+			mapped_type = RESP_SOCKNAME; /* Keep as RESP_SOCKNAME (2) */
+			break;
+		case 8: /* RESP_CMSG in Linux data */
+			mapped_type = RESP_CMSG; /* Keep as RESP_CMSG (8) */
+			break;
+		case 6: /* RESP_LENGTH in Linux data */
+			mapped_type = RESP_LENGTH; /* Keep as RESP_LENGTH (6) */
+			break;
+		case 7: /* RESP_DATA in Linux data */
+			mapped_type = RESP_DATA; /* Keep as RESP_DATA (7) */
+			break;
+		case 4: /* RESP_PEERNAME in Linux data */
+			mapped_type = RESP_PEERNAME; /* Keep as RESP_PEERNAME (4) */
+			break;
+		default:
+			/* For unknown types, keep original */
+			mapped_type = linux_type;
+			break;
 	}
 	
 	fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
