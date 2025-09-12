@@ -78,141 +78,107 @@ struct linux_addrinfo {
 	struct addrinfo *ai_next; /* Next in list */
 };
 
-/* Convert Linux addrinfo to local OS addrinfo */
+/* Convert Linux addrinfo to local OS addrinfo - safe field-by-field conversion */
 static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
 {
-	const struct addrinfo *linux_ai = (const struct addrinfo *)linux_data;
+	const uint8_t *data = (const uint8_t*)linux_data;
 	struct addrinfo *local_ai = (struct addrinfo *)local_data;
 	
 	/* Clear the output buffer */
 	memset(local_data, 0, *local_size);
 	
-	if (linux_size >= sizeof(struct addrinfo) && *local_size >= sizeof(struct addrinfo)) {
-		/* Copy basic fields that are generally compatible */
-		local_ai->ai_flags = linux_ai->ai_flags;
-		local_ai->ai_family = linux_ai->ai_family;
-		local_ai->ai_socktype = linux_ai->ai_socktype;
-		local_ai->ai_protocol = linux_ai->ai_protocol;
-		local_ai->ai_addrlen = linux_ai->ai_addrlen;
+	if (linux_size >= 48 && *local_size >= sizeof(struct addrinfo)) {
+		/* Parse binary data field by field to avoid struct layout issues */
+		/* ai_flags (4 bytes at offset 0) */
+		local_ai->ai_flags = *(const int32_t*)(data + 0);
 		
-		/* Handle canonical name - copy if present */
-		if (linux_ai->ai_canonname) {
-			size_t name_len = strlen(linux_ai->ai_canonname) + 1;
-			if (name_len <= 256) { /* Reasonable limit */
-				local_ai->ai_canonname = malloc(name_len);
-				if (local_ai->ai_canonname) {
-					strcpy(local_ai->ai_canonname, linux_ai->ai_canonname);
-				}
-			}
-		}
+		/* ai_family (4 bytes at offset 4) */
+		local_ai->ai_family = *(const int32_t*)(data + 4);
 		
-		/* ai_addr and ai_next are pointers - will be set by caller */
+		/* ai_socktype (4 bytes at offset 8) */
+		local_ai->ai_socktype = *(const int32_t*)(data + 8);
+		
+		/* ai_protocol (4 bytes at offset 12) */
+		local_ai->ai_protocol = *(const int32_t*)(data + 12);
+		
+		/* ai_addrlen (8 bytes at offset 16) */
+		local_ai->ai_addrlen = *(const socklen_t*)(data + 16);
+		
+		/* ai_canonname (8 bytes at offset 24) - pointer, set to NULL for safety */
+		local_ai->ai_canonname = NULL;
+		
+		/* ai_addr (8 bytes at offset 32) - pointer, set to NULL for safety */
 		local_ai->ai_addr = NULL;
+		
+		/* ai_next (8 bytes at offset 40) - pointer, set to NULL for safety */
 		local_ai->ai_next = NULL;
 		
 		*local_size = sizeof(struct addrinfo);
 	} else {
 		/* Fallback: copy what we can */
-		memcpy(local_data, linux_data, linux_size);
-		*local_size = linux_size;
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
 	}
 }
 
-/* Convert Linux dstaddr to FreeBSD dstaddr */
-static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst, struct linux_dstaddr *local_dst) {
-	/* Never copy anonymous structures - abort if we encounter one */
-	fprintf(stderr, "ERROR: Attempted to copy anonymous structure - this is unsafe!\n");
-	abort();
-}
-
-/* Convert Linux sockaddr to local OS sockaddr - comprehensive conversion */
-static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
-                                           void *local_data, size_t *local_size)
-{
-	const struct sockaddr_in *linux_sin = (const struct sockaddr_in *)linux_data;
-	const struct sockaddr_in6 *linux_sin6 = (const struct sockaddr_in6 *)linux_data;
-	struct sockaddr_in *local_sin = (struct sockaddr_in *)local_data;
-	struct sockaddr_in6 *local_sin6 = (struct sockaddr_in6 *)local_data;
-	
-#ifdef __DEBUG__
-	fprintf(stderr, "DEBUG: convert_linux_sockaddr_to_local: linux_size=%zu, local_size=%zu\n", 
-		linux_size, *local_size);
-	fprintf(stderr, "DEBUG: Linux sin_family=%d, sin6_family=%d\n", 
-		linux_sin->sin_family, linux_sin6->sin6_family);
-#endif /* __DEBUG__ */
+/* Convert Linux dstaddr to FreeBSD dstaddr - safe field-by-field conversion */
+static void convert_linux_dstaddr_to_local(const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
+	const uint8_t *data = (const uint8_t*)linux_data;
+	struct linux_dstaddr *local_dst = (struct linux_dstaddr *)local_data;
 	
 	/* Clear the output buffer */
 	memset(local_data, 0, *local_size);
 	
-	/* Handle IPv4 addresses - check multiple possible family values */
-	if (linux_size >= sizeof(struct sockaddr_in)) {
-		if (linux_sin->sin_family == AF_INET || 
-		    linux_sin->sin_family == 2 ||  /* Common AF_INET value */
-		    linux_sin->sin_family == 0 ||  /* AF_UNSPEC = 0, assume IPv4 in sockaddr_in context */
-		    linux_sin->sin_family == AF_UNSPEC) {  /* AF_UNSPEC constant */
-			/* IPv4 address - convert Linux format to local format */
-			local_sin->sin_family = AF_INET;
-			local_sin->sin_port = linux_sin->sin_port;
-			local_sin->sin_addr = linux_sin->sin_addr;
-			*local_size = sizeof(struct sockaddr_in);
-			return;
+	if (linux_size >= 16 && *local_size >= sizeof(struct linux_dstaddr)) {
+		/* Parse binary data field by field to avoid struct layout issues */
+		/* family field (4 bytes at offset 0) */
+		local_dst->family = *(const int32_t*)(data + 0);
+		
+		/* Copy the address based on family - copy individual bytes to avoid alignment issues */
+		if (local_dst->family == AF_INET) {
+			/* IPv4 address - copy 4 bytes starting at offset 4 */
+			memcpy(&local_dst->addr.ipv4, data + 4, sizeof(struct in_addr));
+		} else if (local_dst->family == AF_INET6) {
+			/* IPv6 address - copy 16 bytes starting at offset 4 */
+			memcpy(&local_dst->addr.ipv6, data + 4, sizeof(struct in6_addr));
 		}
+		
+		*local_size = sizeof(struct linux_dstaddr);
+	} else {
+		fprintf(stderr, "ERROR: Dstaddr data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
+		*local_size = 0;
 	}
+}
+
+/* Convert Linux sockaddr to local OS sockaddr - safe field-by-field conversion */
+static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux_size,
+                                           void *local_data, size_t *local_size)
+{
+	const uint8_t *data = (const uint8_t*)linux_data;
+	struct sockaddr_in *local_sin = (struct sockaddr_in *)local_data;
+	struct sockaddr_in6 *local_sin6 = (struct sockaddr_in6 *)local_data;
 	
-	/* Handle IPv6 addresses - check multiple possible family values */
-	if (linux_size >= sizeof(struct sockaddr_in6)) {
-		if (linux_sin6->sin6_family == AF_INET6 || 
-		    linux_sin6->sin6_family == 10 ||  /* Linux AF_INET6 */
-		    linux_sin6->sin6_family == 28 ||  /* FreeBSD AF_INET6 */
-		    linux_sin6->sin6_family == 0 ||   /* AF_UNSPEC = 0, assume IPv6 in sockaddr_in6 context */
-		    linux_sin6->sin6_family == AF_UNSPEC) {  /* AF_UNSPEC constant */
-			/* IPv6 address - convert Linux format to local format */
-			local_sin6->sin6_family = AF_INET6;
-			local_sin6->sin6_port = linux_sin6->sin6_port;
-			local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-			local_sin6->sin6_addr = linux_sin6->sin6_addr;
-			local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-			*local_size = sizeof(struct sockaddr_in6);
-			return;
-		}
-	}
+	/* Clear the output buffer */
+	memset(local_data, 0, *local_size);
 	
-	/* Enhanced inference based on data size and content */
-	if (linux_size >= 8) {
-		/* Try to parse as IPv4 if data length suggests it */
-		if (linux_size == sizeof(struct sockaddr_in)) {
-			/* Check if port is in big-endian or little-endian format */
-			uint16_t port_be = ntohs(linux_sin->sin_port);
-			uint16_t port_le = linux_sin->sin_port;
-			
-			/* Use the port that makes sense (reasonable port numbers) */
-			uint16_t port = (port_be > 0 && port_be != port_le) ? port_be : port_le;
-			
-			local_sin->sin_family = AF_INET;
-			local_sin->sin_port = htons(port);
-			local_sin->sin_addr = linux_sin->sin_addr;
-			*local_size = sizeof(struct sockaddr_in);
-			return;
-		}
-		/* Try to parse as IPv6 if data length suggests it */
-		else if (linux_size == sizeof(struct sockaddr_in6)) {
-			local_sin6->sin6_family = AF_INET6;
-			local_sin6->sin6_port = linux_sin6->sin6_port;
-			local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-			local_sin6->sin6_addr = linux_sin6->sin6_addr;
-			local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-			*local_size = sizeof(struct sockaddr_in6);
-			return;
-		}
-	}
-	
-	/* Enhanced fallback: try to detect address family from data content */
+	/* Parse binary data field by field to avoid struct layout issues */
 	if (linux_size >= 16) {
-		/* Check if this might be IPv6 data (28 bytes typical) */
-		if (linux_size >= 28) {
-			/* Assume IPv6 and try to convert - copy field by field */
-			const uint8_t *data = (const uint8_t*)linux_data;
+		/* Extract family field (2 bytes at offset 0) */
+		uint16_t family = *(const uint16_t*)(data + 0);
+		
+		/* Handle IPv4 addresses */
+		if (family == AF_INET || family == 2 || family == 0) {
+			local_sin->sin_family = AF_INET;
+			local_sin->sin_port = *(const uint16_t*)(data + 2);
+			memcpy(&local_sin->sin_addr, data + 4, 4);
+			memset(local_sin->sin_zero, 0, 8);
+			*local_size = sizeof(struct sockaddr_in);
+			return;
+		}
+		/* Handle IPv6 addresses */
+		else if (family == AF_INET6 || family == 10 || family == 28) {
 			local_sin6->sin6_family = AF_INET6;
 			local_sin6->sin6_port = *(const uint16_t*)(data + 2);
 			memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
@@ -221,15 +187,23 @@ static void convert_linux_sockaddr_to_local(const void *linux_data, size_t linux
 			*local_size = sizeof(struct sockaddr_in6);
 			return;
 		}
-		/* Check if this might be IPv4 data (16 bytes typical) */
-		else if (linux_size >= 16) {
-			/* Assume IPv4 and try to convert - copy field by field */
-			const uint8_t *data = (const uint8_t*)linux_data;
+		/* Fallback: assume IPv4 based on size */
+		else if (linux_size <= 16) {
 			local_sin->sin_family = AF_INET;
 			local_sin->sin_port = *(const uint16_t*)(data + 2);
 			memcpy(&local_sin->sin_addr, data + 4, 4);
 			memset(local_sin->sin_zero, 0, 8);
 			*local_size = sizeof(struct sockaddr_in);
+			return;
+		}
+		/* Fallback: assume IPv6 based on size */
+		else if (linux_size >= 28) {
+			local_sin6->sin6_family = AF_INET6;
+			local_sin6->sin6_port = *(const uint16_t*)(data + 2);
+			memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
+			memcpy(&local_sin6->sin6_addr, data + 8, 16);
+			memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
+			*local_size = sizeof(struct sockaddr_in6);
 			return;
 		}
 	}
@@ -251,8 +225,17 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		fprintf(stderr, "ERROR: NULL pointer detected in load_linux_binary_data\n");
 		return -1;
 	}
-	if (linux_size == 0 || *local_size == 0) {
-		fprintf(stderr, "ERROR: Zero size detected in load_linux_binary_data\n");
+	if (linux_size == 0) {
+		/* Some response types may legitimately have zero size (e.g., empty addrinfo lists) */
+		if (response_type == 8 || response_type == 10) { /* RESP_ADDRINFO, RESP_ADDRINFO_10 */
+			*local_size = 0;
+			return 0;
+		}
+		fprintf(stderr, "ERROR: Zero linux_size detected in load_linux_binary_data\n");
+		return -1;
+	}
+	if (*local_size == 0) {
+		fprintf(stderr, "ERROR: Zero local_size detected in load_linux_binary_data\n");
 		return -1;
 	}
 	
@@ -280,18 +263,19 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		return 0;
 	}
 	else if (mapped_type == 2) { /* RESP_SOCKNAME */
-		/* Handle socket name - convert Linux sockaddr to local sockaddr */
-		/* Never copy anonymous structures - abort if we encounter one */
-		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (sockaddr) - this is unsafe!\n");
-		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
-		abort();
+		/* Handle socket name - convert using safe field-by-field method */
+		convert_linux_sockaddr_to_local(linux_data, linux_size, local_data, local_size);
+		return 0;
 	}
 	else if (mapped_type == 3) { /* RESP_DSTADDR */
-		/* Handle destination address - convert Linux dstaddr to local dstaddr */
-		/* Never copy anonymous structures - abort if we encounter one */
-		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (dstaddr) - this is unsafe!\n");
-		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
-		abort();
+		/* Handle destination address - convert using safe field-by-field method */
+		if (linux_size >= 16 && *local_size >= sizeof(struct linux_dstaddr)) {
+			convert_linux_dstaddr_to_local(linux_data, linux_size, local_data, local_size);
+		} else {
+			fprintf(stderr, "ERROR: Dstaddr data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
+			return -1;
+		}
+		return 0;
 	}
 	else if (mapped_type == 4) { /* RESP_PEERNAME, RESP_PROTO, RESP_TTL, RESP_TIMEOFDAY, RESP_READ_ERROR, RESP_N_RESOLV */
 		/* Handle simple integer/byte data - just copy */
@@ -304,13 +288,19 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		return 0;
 	}
 	else if (mapped_type == 5) { /* RESP_RCVDTTL, RESP_RESOLVER */
-		/* Handle TTL/resolver data - just copy */
-		if (linux_size > *local_size) {
-			fprintf(stderr, "ERROR: TTL/resolver data too large (%zu > %zu)\n", linux_size, *local_size);
-			return -1;
+		/* Handle TTL/resolver data - check if it's sockaddr data */
+		if (linux_size >= 16 && (*local_size >= sizeof(struct sockaddr_in) || *local_size >= sizeof(struct sockaddr_in6))) {
+			/* Likely sockaddr data - convert using safe method */
+			convert_linux_sockaddr_to_local(linux_data, linux_size, local_data, local_size);
+		} else {
+			/* Regular TTL/resolver data - just copy */
+			if (linux_size > *local_size) {
+				fprintf(stderr, "ERROR: TTL/resolver data too large (%zu > %zu)\n", linux_size, *local_size);
+				return -1;
+			}
+			memcpy(local_data, linux_data, linux_size);
+			*local_size = linux_size;
 		}
-		memcpy(local_data, linux_data, linux_size);
-		*local_size = linux_size;
 		return 0;
 	}
 	else if (mapped_type == 6) { /* RESP_RCVDTCLASS, RESP_LENGTH */
@@ -334,11 +324,14 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		return 0;
 	}
 	else if (mapped_type == 8) { /* RESP_ADDRINFO, RESP_CMSG */
-		/* Handle addrinfo/control message - convert or copy */
-		/* Never copy anonymous structures - abort if we encounter one */
-		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (addrinfo) - this is unsafe!\n");
-		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
-		abort();
+		/* Handle addrinfo/control message - convert using safe field-by-field method */
+		if (linux_size >= 48 && *local_size >= sizeof(struct addrinfo)) {
+			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
+		} else {
+			fprintf(stderr, "ERROR: Addrinfo data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
+			return -1;
+		}
+		return 0;
 	}
 	else if (mapped_type == 9) { /* RESP_ADDRINFO_SA, RESP_TIMEOUT */
 		/* Handle addrinfo_sa/timeout data - just copy */
@@ -351,11 +344,19 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		return 0;
 	}
 	else if (mapped_type == 10) { /* RESP_ADDRINFO_10 */
-		/* Handle addrinfo type 10 - convert Linux addrinfo to local addrinfo */
-		/* Never copy anonymous structures - abort if we encounter one */
-		fprintf(stderr, "ERROR: Attempted to copy anonymous structure (addrinfo type 10) - this is unsafe!\n");
-		fprintf(stderr, "ERROR: Anonymous structures have different layouts between systems and cannot be safely copied.\n");
-		abort();
+		/* Handle addrinfo type 10 - convert using safe field-by-field method */
+		if (linux_size >= 48 && *local_size >= sizeof(struct addrinfo)) {
+			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
+		} else {
+			fprintf(stderr, "ERROR: Addrinfo type 10 data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
+			return -1;
+		}
+		return 0;
+	}
+	else if (mapped_type == 11) { /* RESP_ADDRINFO_SA */
+		/* Handle addrinfo_sa (sockaddr) data - convert using safe field-by-field method */
+		convert_linux_sockaddr_to_local(linux_data, linux_size, local_data, local_size);
+		return 0;
 	}
 	else {
 		/* Unknown response type - copy what we can */
