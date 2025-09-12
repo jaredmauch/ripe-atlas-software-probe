@@ -40,11 +40,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	int mapped_type = response_type;
 	if (current_tool) {
 		mapped_type = response_type; // Keep original response type
-		/* Only show debug message if there's an actual mapping change */
-		if (mapped_type != response_type) {
-			fprintf(stderr, "DEBUG: load_linux_binary_data: processing for tool '%s', mapped type %d->%d\n",
-				current_tool, response_type, mapped_type);
-		}
+		// No debug output needed since we're not doing any actual mapping
 	}
 	
 	/* Handle different response types */
