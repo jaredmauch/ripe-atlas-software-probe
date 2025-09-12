@@ -503,8 +503,8 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	if (mapped_type != type)
 	{
 		fprintf(stderr,
-			 "read_response: wrong type, expected %d, got %d (mapped from %d)\n",
-			type, mapped_type, tmp_type);
+			 "read_response: wrong type, expected %d, got %d (mapped from %d) - tool: %s\n",
+			type, mapped_type, tmp_type, current_tool ? current_tool : "unknown");
 		exit(1);
 	}
 	if (read(fd, &tmp_size, sizeof(tmp_size)) != sizeof(tmp_size))
@@ -600,8 +600,8 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 	if (mapped_type != type)
 	{
 		fprintf(stderr,
-		 "read_response_file: wrong type, expected %d, got %d (mapped from %d)\n",
-			type, mapped_type, tmp_type);
+		 "read_response_file: wrong type, expected %d, got %d (mapped from %d) - tool: %s\n",
+			type, mapped_type, tmp_type, current_tool ? current_tool : "unknown");
 		exit(1);
 	}
 	if (fread(&tmp_size, sizeof(tmp_size), 1, file) != 1)
