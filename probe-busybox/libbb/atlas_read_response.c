@@ -174,7 +174,7 @@ static int map_linux_response_type(int linux_type) {
 		switch(linux_type) {
 			case 1: mapped_type = 1; break; /* RESP_PACKET -> RESP_PACKET */
 			case 2: mapped_type = 2; break; /* RESP_PEERNAME -> RESP_PEERNAME */
-			case 3: mapped_type = 1; break; /* RESP_SOCKNAME -> RESP_PACKET */
+			case 3: mapped_type = 3; break; /* RESP_SOCKNAME -> RESP_SOCKNAME */
 			case 4: mapped_type = 4; break; /* RESP_TTL -> RESP_TTL */
 			case 5: mapped_type = 5; break; /* RESP_DSTADDR -> RESP_DSTADDR */
 			case 6: mapped_type = 6; break; /* RESP_ADDRINFO -> RESP_ADDRINFO */
