@@ -210,8 +210,8 @@ static int map_linux_response_type(int linux_type) {
 		}
 	}
 	
-	// fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
-	//	current_tool, linux_type, mapped_type);
+	fprintf(stderr, "DEBUG: map_linux_response_type: tool='%s', linux_type=%d -> mapped_type=%d\n", 
+		current_tool, linux_type, mapped_type);
 	
 	return mapped_type;
 }
