@@ -198,7 +198,7 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evping") == 0) {
-		/* evping expects: 1, 2, 5, 4, 3, 8, 9, 6 */
+		/* evping expects: 1, 2, 5, 4, 3, 8, 9, 6, 7 */
 		switch (linux_type) {
 			case 1: return 1; /* RESP_PACKET */
 			case 2: return 2; /* RESP_PEERNAME */
@@ -208,9 +208,10 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 			case 8: return 8; /* RESP_ADDRINFO */
 			case 9: return 9; /* RESP_ADDRINFO_SA */
 			case 6: return 6; /* RESP_RCVDTCLASS */
+			case 7: return 7; /* RESP_SENDTO/RESP_DATA */
 			default: 
 				fprintf(stderr, "ERROR: evping got unexpected Linux type %d\n", linux_type);
-				fprintf(stderr, "ERROR: Expected types: 1, 2, 5, 4, 3, 8, 9, 6 - stopping test\n");
+				fprintf(stderr, "ERROR: Expected types: 1, 2, 5, 4, 3, 8, 9, 6, 7 - stopping test\n");
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evntp") == 0) {
@@ -304,15 +305,15 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 			fprintf(stderr, "DEBUG: Converted to FreeBSD dstaddr, size=%zu\n", *local_size);
 			return 0;
 		}
-	} else if (mapped_type == RESP_PACKET) {
+	} else if (mapped_type == RESP_PACKET || mapped_type == RESP_SENDTO || mapped_type == RESP_DATA) {
 		/* Handle packet data structures */
-		fprintf(stderr, "DEBUG: Processing packet data structure (type %d)\n", response_type);
+		fprintf(stderr, "DEBUG: Processing packet/sendto/data structure (type %d)\n", response_type);
 		if (linux_size >= sizeof(struct linux_packet)) {
 			const struct linux_packet *linux_pkt = (const struct linux_packet *)linux_data;
-			fprintf(stderr, "DEBUG: Linux packet: size=%u\n", linux_pkt->size);
+			fprintf(stderr, "DEBUG: Linux packet/sendto/data: size=%u\n", linux_pkt->size);
 			convert_linux_packet_to_local(linux_pkt, (struct linux_packet *)local_data, linux_size);
 			*local_size = linux_size;
-			fprintf(stderr, "DEBUG: Converted to FreeBSD packet, size=%zu\n", *local_size);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD packet/sendto/data, size=%zu\n", *local_size);
 			return 0;
 		}
 	} else if (mapped_type == RESP_RCVDTCLASS) {
