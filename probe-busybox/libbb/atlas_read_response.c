@@ -96,7 +96,6 @@ void set_response_tool(const char *tool) {
 
 /* All datafiles are Linux-generated, no detection needed */
 static int detect_linux_datafile(int response_type) {
-	fprintf(stderr, "DEBUG: detect_linux_datafile: treating as Linux datafile (type %d)\n", response_type);
 	return 1; /* Always return true - all datafiles are Linux */
 }
 
@@ -112,13 +111,8 @@ static int map_linux_response_type(int linux_type) {
 	
 	/* All datafiles are Linux, so always apply mapping */
 	
-	fprintf(stderr, "DEBUG: map_linux_response_type: mapping Linux type %d for tool %s\n", linux_type, current_tool);
-	
 	/* Use application-specific response type mapping */
 	int mapped_type = map_linux_to_app_response_type(linux_type, current_tool);
-	
-	fprintf(stderr, "DEBUG: map_linux_response_type: mapped Linux type %d -> %d for %s\n", 
-		linux_type, mapped_type, current_tool);
 	
 	return mapped_type;
 }
