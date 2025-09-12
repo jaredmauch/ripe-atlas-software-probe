@@ -86,20 +86,6 @@ static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *l
 	memset(local_sin->sin_zero, 0, sizeof(local_sin->sin_zero));
 }
 
-/* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
-static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
-	/* Convert Linux family value to FreeBSD family value */
-	if (linux_sin6->sin6_family == 10 || linux_sin6->sin6_family == 0) {
-		local_sin6->sin6_family = AF_INET6;  /* FreeBSD AF_INET6 */
-	} else {
-		local_sin6->sin6_family = linux_sin6->sin6_family;  /* Assume already correct */
-	}
-	local_sin6->sin6_port = linux_sin6->sin6_port;
-	local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
-	local_sin6->sin6_addr = linux_sin6->sin6_addr;
-	local_sin6->sin6_scope_id = linux_sin6->sin6_scope_id;
-}
-
 /* Convert Linux addrinfo to local OS addrinfo */
 static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux_size,
                                            void *local_data, size_t *local_size)
@@ -163,10 +149,16 @@ static void convert_linux_sockaddr_in_to_local(const struct linux_sockaddr_in *l
 /* Convert Linux sockaddr_in6 to FreeBSD sockaddr_in6 */
 static void convert_linux_sockaddr_in6_to_local(const struct linux_sockaddr_in6 *linux_sin6, struct sockaddr_in6 *local_sin6) {
 	/* Convert Linux family value to FreeBSD family value */
-	if (linux_sin6->sin6_family == 10 || linux_sin6->sin6_family == 0) {
-		local_sin6->sin6_family = AF_INET6;  /* FreeBSD AF_INET6 */
+	/* Handle common address family values */
+	if (linux_sin6->sin6_family == 10 || linux_sin6->sin6_family == AF_INET6) {
+		/* Linux AF_INET6 = 10, FreeBSD AF_INET6 = 28 */
+		local_sin6->sin6_family = AF_INET6;
+	} else if (linux_sin6->sin6_family == 0 || linux_sin6->sin6_family == AF_UNSPEC) {
+		/* AF_UNSPEC = 0, but in sockaddr_in6 context, assume IPv6 */
+		local_sin6->sin6_family = AF_INET6;
 	} else {
-		local_sin6->sin6_family = linux_sin6->sin6_family;  /* Assume already correct */
+		/* For other values, assume they're already correct for the target system */
+		local_sin6->sin6_family = linux_sin6->sin6_family;
 	}
 	local_sin6->sin6_port = linux_sin6->sin6_port;
 	local_sin6->sin6_flowinfo = linux_sin6->sin6_flowinfo;
