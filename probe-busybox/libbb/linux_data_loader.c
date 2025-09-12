@@ -194,7 +194,7 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evntp") == 0) {
-		/* evntp expects: 4, 1, 5, 3, 8, 9 */
+		/* evntp expects: 4, 1, 5, 3, 8, 9, 6 */
 		switch (linux_type) {
 			case 4: return 4; /* RESP_TIMEOFDAY */
 			case 1: return 1; /* RESP_PACKET */
@@ -202,9 +202,10 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 			case 3: return 3; /* RESP_SOCKNAME */
 			case 8: return 8; /* RESP_ADDRINFO */
 			case 9: return 9; /* RESP_ADDRINFO_SA */
+			case 6: return 6; /* RESP_RCVDTCLASS */
 			default: 
 				fprintf(stderr, "ERROR: evntp got unexpected Linux type %d\n", linux_type);
-				fprintf(stderr, "ERROR: Expected types: 4, 1, 5, 3, 8, 9 - stopping test\n");
+				fprintf(stderr, "ERROR: Expected types: 4, 1, 5, 3, 8, 9, 6 - stopping test\n");
 				exit(1);
 		}
 	} else if (strcmp(app_tool, "evhttpget") == 0 || strcmp(app_tool, "evsslgetcert") == 0) {
@@ -294,16 +295,16 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 			fprintf(stderr, "DEBUG: Converted to FreeBSD packet, size=%zu\n", *local_size);
 			return 0;
 		}
-	} else if (mapped_type == RESP_RCVDTTL || mapped_type == RESP_TTL) {
-		/* Handle TTL structures */
-		fprintf(stderr, "DEBUG: Processing TTL structure (type %d)\n", response_type);
+	} else if (mapped_type == RESP_RCVDTTL || mapped_type == RESP_TTL || mapped_type == RESP_RCVDTCLASS) {
+		/* Handle TTL/Traffic Class structures */
+		fprintf(stderr, "DEBUG: Processing TTL/Traffic Class structure (type %d)\n", response_type);
 		if (linux_size >= sizeof(struct linux_ttl)) {
 			const struct linux_ttl *linux_ttl = (const struct linux_ttl *)linux_data;
-			fprintf(stderr, "DEBUG: Linux TTL: ttl=%d, tos=%d, flags=%d\n", 
+			fprintf(stderr, "DEBUG: Linux TTL/Traffic Class: ttl=%d, tos=%d, flags=%d\n", 
 				linux_ttl->ttl, linux_ttl->tos, linux_ttl->flags);
 			convert_linux_ttl_to_local(linux_ttl, (struct linux_ttl *)local_data);
 			*local_size = sizeof(struct linux_ttl);
-			fprintf(stderr, "DEBUG: Converted to FreeBSD TTL, size=%zu\n", *local_size);
+			fprintf(stderr, "DEBUG: Converted to FreeBSD TTL/Traffic Class, size=%zu\n", *local_size);
 			return 0;
 		}
 	} else if (mapped_type == RESP_TIMEOFDAY) {
