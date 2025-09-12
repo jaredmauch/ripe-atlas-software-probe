@@ -35,83 +35,6 @@ int map_linux_to_app_response_type(int linux_type, const char *app_tool) {
 	return linux_type;
 }
 
-/* Load and convert Linux binary data to local OS format */
-int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
-#ifndef __linux__
-	/* Map response type if needed */
-	extern const char *current_tool;
-	int mapped_type = response_type;
-	if (current_tool) {
-		mapped_type = response_type; // Keep original response type
-		// No debug output needed since we're not doing any actual mapping
-	}
-	
-	/* Handle different response types with proper struct conversion */
-	if (mapped_type == RESP_PACKET) {
-		/* Handle packet data - just copy as-is */
-		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-		memcpy(local_data, linux_data, copy_size);
-		*local_size = copy_size;
-		return 0;
-	} else if (mapped_type == RESP_SOCKNAME) {
-		/* Handle socket name - convert Linux sockaddr to FreeBSD sockaddr */
-		if (linux_size >= sizeof(struct linux_sockaddr_in6) && *local_size >= sizeof(struct sockaddr_in6)) {
-			convert_linux_sockaddr_in6_to_local((const struct linux_sockaddr_in6*)linux_data, (struct sockaddr_in6*)local_data);
-			*local_size = sizeof(struct sockaddr_in6);
-		} else if (linux_size >= sizeof(struct linux_sockaddr_in) && *local_size >= sizeof(struct sockaddr_in)) {
-			convert_linux_sockaddr_in_to_local((const struct linux_sockaddr_in*)linux_data, (struct sockaddr_in*)local_data);
-			*local_size = sizeof(struct sockaddr_in);
-		} else {
-			/* Fallback: just copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
-		}
-		return 0;
-	} else if (mapped_type == RESP_DSTADDR) {
-		/* Handle destination address - convert Linux dstaddr to FreeBSD dstaddr */
-		if (linux_size >= sizeof(struct linux_dstaddr) && *local_size >= sizeof(struct linux_dstaddr)) {
-			convert_linux_dstaddr_to_local((const struct linux_dstaddr*)linux_data, (struct linux_dstaddr*)local_data);
-			*local_size = sizeof(struct linux_dstaddr);
-		} else {
-			/* Fallback: just copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
-		}
-		return 0;
-	} else if (mapped_type == RESP_ADDRINFO) {
-		/* Handle addrinfo - convert Linux addrinfo to FreeBSD addrinfo */
-		if (linux_size >= sizeof(struct linux_addrinfo) && *local_size >= sizeof(struct addrinfo)) {
-			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
-		} else {
-			/* Fallback: just copy */
-			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-			memcpy(local_data, linux_data, copy_size);
-			*local_size = copy_size;
-		}
-		return 0;
-	} else if (mapped_type == RESP_PROTO) {
-		/* Handle protocol - just copy for now */
-		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-		memcpy(local_data, linux_data, copy_size);
-		*local_size = copy_size;
-		return 0;
-	} else {
-		/* For other types, just copy the data as-is */
-		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-		memcpy(local_data, linux_data, copy_size);
-		*local_size = copy_size;
-		return 0;
-	}
-#else
-	/* On Linux, just copy the data as-is */
-	size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-	memcpy(local_data, linux_data, copy_size);
-	*local_size = copy_size;
-	return 0;
-#endif
-}
 
 /* Linux-specific struct definitions for binary data compatibility */
 #ifndef __linux__
@@ -222,4 +145,85 @@ static void convert_linux_dstaddr_to_local(const struct linux_dstaddr *linux_dst
 	}
 }
 
+/* Load and convert Linux binary data to local OS format */
+int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
+	/* Map response type if needed */
+	extern const char *current_tool;
+	int mapped_type = response_type;
+	if (current_tool) {
+		mapped_type = response_type; // Keep original response type
+		// No debug output needed since we're not doing any actual mapping
+	}
+	
+	/* Handle different response types with proper struct conversion */
+	if (mapped_type == RESP_PACKET) {
+		/* Handle packet data - just copy as-is */
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+		return 0;
+	} else if (mapped_type == RESP_SOCKNAME) {
+		/* Handle socket name - convert Linux sockaddr to FreeBSD sockaddr */
+		if (linux_size >= sizeof(struct linux_sockaddr_in6) && *local_size >= sizeof(struct sockaddr_in6)) {
+			convert_linux_sockaddr_in6_to_local((const struct linux_sockaddr_in6*)linux_data, (struct sockaddr_in6*)local_data);
+			*local_size = sizeof(struct sockaddr_in6);
+		} else if (linux_size >= sizeof(struct linux_sockaddr_in) && *local_size >= sizeof(struct sockaddr_in)) {
+			convert_linux_sockaddr_in_to_local((const struct linux_sockaddr_in*)linux_data, (struct sockaddr_in*)local_data);
+			*local_size = sizeof(struct sockaddr_in);
+		} else {
+			/* Fallback: just copy */
+			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+			memcpy(local_data, linux_data, copy_size);
+			*local_size = copy_size;
+		}
+		return 0;
+	} else if (mapped_type == RESP_DSTADDR) {
+		/* Handle destination address - convert Linux dstaddr to FreeBSD dstaddr */
+		if (linux_size >= sizeof(struct linux_dstaddr) && *local_size >= sizeof(struct linux_dstaddr)) {
+			convert_linux_dstaddr_to_local((const struct linux_dstaddr*)linux_data, (struct linux_dstaddr*)local_data);
+			*local_size = sizeof(struct linux_dstaddr);
+		} else {
+			/* Fallback: just copy */
+			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+			memcpy(local_data, linux_data, copy_size);
+			*local_size = copy_size;
+		}
+		return 0;
+	} else if (mapped_type == RESP_ADDRINFO) {
+		/* Handle addrinfo - convert Linux addrinfo to FreeBSD addrinfo */
+		if (linux_size >= sizeof(struct linux_addrinfo) && *local_size >= sizeof(struct addrinfo)) {
+			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
+		} else {
+			/* Fallback: just copy */
+			size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+			memcpy(local_data, linux_data, copy_size);
+			*local_size = copy_size;
+		}
+		return 0;
+	} else if (mapped_type == RESP_PROTO) {
+		/* Handle protocol - just copy for now */
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+		return 0;
+	} else {
+		/* For other types, just copy the data as-is */
+		size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+		memcpy(local_data, linux_data, copy_size);
+		*local_size = copy_size;
+		return 0;
+	}
+}
+
 #endif /* !__linux__ */
+
+/* Stub function for Linux systems - just copy data as-is */
+#ifdef __linux__
+int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
+	/* On Linux, just copy the data as-is */
+	size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
+	memcpy(local_data, linux_data, copy_size);
+	*local_size = copy_size;
+	return 0;
+}
+#endif
