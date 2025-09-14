@@ -88,7 +88,7 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 	/* Clear the output buffer */
 	memset(local_data, 0, *local_size);
 	
-	if (linux_size >= 48 && *local_size >= sizeof(struct addrinfo)) {
+	if (linux_size >= 24 && *local_size >= sizeof(struct addrinfo)) {
 		/* Parse binary data field by field to avoid struct layout issues */
 		/* ai_flags (4 bytes at offset 0) */
 		local_ai->ai_flags = *(const int32_t*)(data + 0);
@@ -126,28 +126,73 @@ static void convert_linux_addrinfo_to_local(const void *linux_data, size_t linux
 /* Convert Linux dstaddr to FreeBSD dstaddr - safe field-by-field conversion */
 static void convert_linux_dstaddr_to_local(const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
 	const uint8_t *data = (const uint8_t*)linux_data;
-	struct linux_dstaddr *local_dst = (struct linux_dstaddr *)local_data;
+	struct sockaddr_in *local_sin = (struct sockaddr_in *)local_data;
+	struct sockaddr_in6 *local_sin6 = (struct sockaddr_in6 *)local_data;
 	
 	/* Clear the output buffer */
 	memset(local_data, 0, *local_size);
 	
-	if (linux_size >= 16 && *local_size >= sizeof(struct linux_dstaddr)) {
+	if (linux_size >= 16) {
 		/* Parse binary data field by field to avoid struct layout issues */
 		/* family field (4 bytes at offset 0) */
-		local_dst->family = *(const int32_t*)(data + 0);
+		uint16_t family = *(const uint16_t*)(data + 0);
 		
-		/* Copy the address based on family - copy individual bytes to avoid alignment issues */
-		if (local_dst->family == AF_INET) {
-			/* IPv4 address - copy 4 bytes starting at offset 4 */
-			memcpy(&local_dst->addr.ipv4, data + 4, sizeof(struct in_addr));
-		} else if (local_dst->family == AF_INET6) {
-			/* IPv6 address - copy 16 bytes starting at offset 4 */
-			memcpy(&local_dst->addr.ipv6, data + 4, sizeof(struct in6_addr));
+		/* Handle IPv4 addresses */
+		if (family == AF_INET || family == 2 || family == 0) {
+			if (*local_size >= sizeof(struct sockaddr_in)) {
+				local_sin->sin_family = AF_INET;
+				local_sin->sin_port = *(const uint16_t*)(data + 2);
+				memcpy(&local_sin->sin_addr, data + 4, 4);
+				memset(local_sin->sin_zero, 0, 8);
+				*local_size = sizeof(struct sockaddr_in);
+			} else {
+				fprintf(stderr, "ERROR: Dstaddr IPv4 buffer too small (%zu < %zu)\n", *local_size, sizeof(struct sockaddr_in));
+				*local_size = 0;
+			}
 		}
-		
-		*local_size = sizeof(struct linux_dstaddr);
+		/* Handle IPv6 addresses */
+		else if (family == AF_INET6 || family == 10 || family == 28) {
+			if (*local_size >= sizeof(struct sockaddr_in6)) {
+				local_sin6->sin6_family = AF_INET6;
+				local_sin6->sin6_port = *(const uint16_t*)(data + 2);
+				memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
+				memcpy(&local_sin6->sin6_addr, data + 8, 16);
+				memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
+				*local_size = sizeof(struct sockaddr_in6);
+			} else {
+				fprintf(stderr, "ERROR: Dstaddr IPv6 buffer too small (%zu < %zu)\n", *local_size, sizeof(struct sockaddr_in6));
+				*local_size = 0;
+			}
+		}
+		/* Fallback: assume IPv4 based on size */
+		else if (linux_size <= 16) {
+			if (*local_size >= sizeof(struct sockaddr_in)) {
+				local_sin->sin_family = AF_INET;
+				local_sin->sin_port = *(const uint16_t*)(data + 2);
+				memcpy(&local_sin->sin_addr, data + 4, 4);
+				memset(local_sin->sin_zero, 0, 8);
+				*local_size = sizeof(struct sockaddr_in);
+			} else {
+				fprintf(stderr, "ERROR: Dstaddr IPv4 buffer too small (%zu < %zu)\n", *local_size, sizeof(struct sockaddr_in));
+				*local_size = 0;
+			}
+		}
+		/* Fallback: assume IPv6 based on size */
+		else if (linux_size >= 28) {
+			if (*local_size >= sizeof(struct sockaddr_in6)) {
+				local_sin6->sin6_family = AF_INET6;
+				local_sin6->sin6_port = *(const uint16_t*)(data + 2);
+				memcpy(&local_sin6->sin6_flowinfo, data + 4, 4);
+				memcpy(&local_sin6->sin6_addr, data + 8, 16);
+				memcpy(&local_sin6->sin6_scope_id, data + 24, 4);
+				*local_size = sizeof(struct sockaddr_in6);
+			} else {
+				fprintf(stderr, "ERROR: Dstaddr IPv6 buffer too small (%zu < %zu)\n", *local_size, sizeof(struct sockaddr_in6));
+				*local_size = 0;
+			}
+		}
 	} else {
-		fprintf(stderr, "ERROR: Dstaddr data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
+		fprintf(stderr, "ERROR: Dstaddr data too small (linux=%zu)\n", linux_size);
 		*local_size = 0;
 	}
 }
@@ -257,7 +302,6 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	extern const char *current_tool;
 	int mapped_type;
 	
-	printf("DEBUG: load_linux_binary_data called: response_type=%d, linux_size=%zu, local_size=%zu\n", response_type, linux_size, *local_size);
 	
 	/* Safety checks */
 	if (!linux_data || !local_data || !local_size) {
@@ -265,8 +309,8 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 		return -1;
 	}
 	if (linux_size == 0) {
-		/* Some response types may legitimately have zero size (e.g., empty addrinfo lists) */
-		if (response_type == 8 || response_type == 10) { /* RESP_ADDRINFO, RESP_ADDRINFO_10 */
+		/* Some response types may legitimately have zero size (e.g., empty addrinfo lists, empty packets) */
+		if (response_type == 1 || response_type == 8 || response_type == 10) { /* RESP_PACKET, RESP_ADDRINFO, RESP_ADDRINFO_10 */
 			*local_size = 0;
 			return 0;
 		}
@@ -282,7 +326,6 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	mapped_type = response_type;
 	if (current_tool) {
 		mapped_type = response_type; // Keep original response type
-		printf("DEBUG: current_tool=%s, mapped_type=%d\n", current_tool, mapped_type);
 	}
 	
 	/* Handle different response types with proper struct conversion */
@@ -304,12 +347,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	else if (mapped_type == 3) { /* RESP_DSTADDR */
 		/* Handle destination address - convert using safe field-by-field method */
-		if (linux_size >= 16 && *local_size >= sizeof(struct linux_dstaddr)) {
-			convert_linux_dstaddr_to_local(linux_data, linux_size, local_data, local_size);
-		} else {
-			fprintf(stderr, "ERROR: Dstaddr data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
-			return -1;
-		}
+		convert_linux_dstaddr_to_local(linux_data, linux_size, local_data, local_size);
 		return 0;
 	}
 	else if (mapped_type == 4) { /* RESP_PEERNAME, RESP_PROTO, RESP_TTL, RESP_TIMEOFDAY, RESP_READ_ERROR, RESP_N_RESOLV */
@@ -360,12 +398,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	else if (mapped_type == 8) { /* RESP_ADDRINFO, RESP_CMSG */
 		/* Handle addrinfo/control message - convert using safe field-by-field method */
-		if (linux_size >= 48 && *local_size >= sizeof(struct addrinfo)) {
-			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
-		} else {
-			fprintf(stderr, "ERROR: Addrinfo data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
-			return -1;
-		}
+		convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
 		return 0;
 	}
 	else if (mapped_type == 9) { /* RESP_ADDRINFO_SA, RESP_TIMEOUT */
@@ -380,12 +413,7 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 	}
 	else if (mapped_type == 10) { /* RESP_ADDRINFO_10 */
 		/* Handle addrinfo type 10 - convert using safe field-by-field method */
-		if (linux_size >= 48 && *local_size >= sizeof(struct addrinfo)) {
-			convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
-		} else {
-			fprintf(stderr, "ERROR: Addrinfo type 10 data size mismatch (linux=%zu, local=%zu)\n", linux_size, *local_size);
-			return -1;
-		}
+		convert_linux_addrinfo_to_local(linux_data, linux_size, local_data, local_size);
 		return 0;
 	}
 	else if (mapped_type == 11) { /* RESP_ADDRINFO_SA */
@@ -408,13 +436,3 @@ int load_linux_binary_data(int response_type, const void *linux_data, size_t lin
 
 #endif /* !__linux__ */
 
-/* Stub function for Linux systems - just copy data as-is */
-#ifdef __linux__
-int load_linux_binary_data(int response_type, const void *linux_data, size_t linux_size, void *local_data, size_t *local_size) {
-	/* On Linux, just copy the data as-is */
-	size_t copy_size = (linux_size < *local_size) ? linux_size : *local_size;
-	memcpy(local_data, linux_data, copy_size);
-	*local_size = copy_size;
-	return 0;
-}
-#endif

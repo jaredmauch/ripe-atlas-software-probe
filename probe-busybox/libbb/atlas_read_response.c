@@ -148,13 +148,13 @@ void set_response_tool(const char *tool) {
 }
 
 /* Helper function to get file size once */
-static off_t get_file_size(FILE *file) {
+static size_t get_file_size(FILE *file) {
 	struct stat file_stat;
 	if (fstat(fileno(file), &file_stat) != 0) {
 		fprintf(stderr, "ERROR: Failed to get file size: %s\n", strerror(errno));
 		exit(1);
 	}
-	return file_stat.st_size;
+	return (size_t)file_stat.st_size;
 }
 
 /* All datafiles are Linux-generated, no detection needed */
@@ -283,7 +283,6 @@ void read_response(int fd, int type, size_t *sizep, void *data)
 	
 	/* All datafiles are Linux */
 	int is_linux_datafile = 1;
-	printf("DEBUG: read_response: is_linux_datafile=%d, type=%d\n", is_linux_datafile, type);
 
 	if (got_type)
 	{
@@ -391,7 +390,7 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 	
 	/* All datafiles are Linux on FreeBSD */
 	int is_linux_datafile = 1;
-	off_t file_size;
+	size_t file_size;
 	
 	/* Get file size once at the beginning */
 	file_size = get_file_size(file);
@@ -440,7 +439,7 @@ void read_response_file(FILE *file, int type, size_t *sizep, void *data)
 		
 		/* Use already-obtained file size to validate data size */
 		if (tmp_size > file_size) {
-			fprintf(stderr, "ERROR: Data size %zu exceeds file size %ld\n", tmp_size, file_size);
+			fprintf(stderr, "ERROR: Data size %zu exceeds file size %zu\n", tmp_size, file_size);
 			exit(1);
 		}
 		
