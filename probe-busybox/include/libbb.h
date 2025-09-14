@@ -490,6 +490,9 @@ extern int map_linux_to_app_response_type(int linux_type, const char *app_tool);
 extern void read_response_file(FILE *file, int type, size_t *sizep,
 	void *data);
 extern void write_response(FILE *file, int type, size_t size, void *data);
+#ifdef CONFIG_HAVE_JSON_C
+extern int using_json;
+#endif
 extern int rxtxrpt_main(int argc, char *argv[]);
 
 int ndelay_on(int fd) FAST_FUNC;

@@ -671,7 +671,7 @@ static void ready_callback(int __attribute((unused)) unused,
 	struct ntphdr *ntphdr;
 	struct timeval now;
 	struct ntp_ts final_ts;
-	struct sockaddr_in remote;
+	struct sockaddr_in6 remote;
 	char line[80];
 
 	state= s;
@@ -700,11 +700,40 @@ static void ready_callback(int __attribute((unused)) unused,
 	if (state->response_in)
 	{
 		size_t len;
+		int tmp_type;
+		size_t tmp_size;
 
+		/* Skip RESP_RCVDTTL (5) */
+		peek_response(state->socket, &tmp_type);
+		if (tmp_type == 5) {
+			read_response(state->socket, 5, &tmp_size, NULL);
+		}
+		
+		/* Skip RESP_ADDRINFO (6) */
+		peek_response(state->socket, &tmp_type);
+		if (tmp_type == 6) {
+			read_response(state->socket, 6, &tmp_size, NULL);
+		}
+		
+		/* Skip RESP_SOCKNAME (2) */
+		peek_response(state->socket, &tmp_type);
+		if (tmp_type == 2) {
+			read_response(state->socket, 2, &tmp_size, NULL);
+		}
+		
+		/* Skip RESP_PROTO (4) */
+		peek_response(state->socket, &tmp_type);
+		if (tmp_type == 4) {
+			read_response(state->socket, 4, &tmp_size, NULL);
+		}
+
+		/* Read RESP_PACKET (1) */
 		len= sizeof(base->packet);
 		read_response(state->socket, RESP_PACKET,
 			&len, base->packet);
 		nrecv= len;
+		
+		/* Read RESP_DSTADDR (3) */
 		len= sizeof(remote);
 		read_response(state->socket, RESP_DSTADDR,
 			&len, &remote);
