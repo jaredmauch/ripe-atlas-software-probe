@@ -135,7 +135,7 @@ struct linux_dstaddr {
 static int got_type= 0;
 static int stored_type;
 #ifdef CONFIG_HAVE_JSON_C
-int using_json = 0;
+int using_json = 1;  /* Enable JSON output by default */
 #endif
 
 /* Global variable to track current tool for response type mapping */
