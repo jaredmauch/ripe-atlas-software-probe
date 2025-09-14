@@ -1,0 +1,11 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evsslgetcert-data//evsslgetcert-TLS1.0.net",
+  "responses": [
+    {"type":3,"type_name":"RESP_DSTADDR","size":28, "sockaddr": {"family":"AF_INET6","address":"2606:4700::6812:142c","port":443,"flowinfo":0,"scope_id":0}},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:1::c100:10a","port":42220,"flowinfo":0,"scope_id":0}},
+    {"type":1,"type_name":"RESP_PACKET","size":7, "packet_data": "15030100020246"}
+  ],
+  "total_responses": 3
+}

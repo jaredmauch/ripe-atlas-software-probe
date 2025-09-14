@@ -1,0 +1,20 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evntp-data//evntp-4.net",
+  "responses": [
+    {"type":5,"type_name":"RESP_RCVDTTL","size":48},
+    {"type":6,"type_name":"RESP_LENGTH","size":16},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.1.10","port":55354}},
+    {"type":4,"type_name":"RESP_PEERNAME","size":16, "sockaddr": {"family":"AF_UNKNOWN"}},
+    {"type":1,"type_name":"RESP_PACKET","size":48, "packet_data": "240103ee000000000000004547505300e4a175fb0962eaa2e4a175fe67115161e4a175fe6724007ee4a175fe6735bfec"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.0.229","port":123}},
+    {"type":4,"type_name":"RESP_PEERNAME","size":16, "sockaddr": {"family":"AF_UNKNOWN"}},
+    {"type":1,"type_name":"RESP_PACKET","size":48, "packet_data": "240103ee000000000000004547505300e4a175fb0962eaa2e4a175fe675c182ee4a175fe676d86cbe4a175fe677ed79f"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.0.229","port":123}},
+    {"type":4,"type_name":"RESP_PEERNAME","size":16, "sockaddr": {"family":"AF_UNKNOWN"}},
+    {"type":1,"type_name":"RESP_PACKET","size":48, "packet_data": "240103ee000000000000004547505300e4a175fb0962eaa2e4a175fe679e060fe4a175fe67af0729e4a175fe67be4b3f"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.0.229","port":123}}
+  ],
+  "total_responses": 12
+}

@@ -1,0 +1,13 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evtdig-data//evtdig-dnskey.net",
+  "responses": [
+    {"type":10,"type_name":"UNKNOWN","size":48, "raw_data": "000000800a00000002000000110000001c00000000000000a07368000000000000000000000000000000000000000000"},
+    {"type":11,"type_name":"UNKNOWN","size":28, "raw_data": "0a000035000000002001067c00e00000000000000000000700000000"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:1::c100:10a","port":60774,"flowinfo":0,"scope_id":0}},
+    {"type":1,"type_name":"RESP_PACKET","size":186, "packet_data": "3039840000010002000000000472697065036e65740000300001c00c0030000100000e1000440101030d17e10b915d10ff99458b1c34b7af427bd7cc329fe1dd1e8aa1e5b9969291405f54ec1530e815b8cfe2b475a68baa980cafd8d0065b3307e9c825223e1481113dc00c0030000100000e1000440100030d92d0c19fdaf9598883cb5ad97e365a11fbb1ff0b1ec20e3ab7d35b009437dab021500446c718ebe70c110816fb90caff0d4aca76addfe0883aa295e5dd145986"},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":16, "sockaddr": {"family":"AF_INET6","address":"2001:67c:e0:0:ffff:0:180:ffff","port":53,"flowinfo":0,"scope_id":81}}
+  ],
+  "total_responses": 5
+}

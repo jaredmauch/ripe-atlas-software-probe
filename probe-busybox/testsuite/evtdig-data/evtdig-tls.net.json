@@ -1,0 +1,12 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evtdig-data//evtdig-tls.net",
+  "responses": [
+    {"type":2,"type_name":"RESP_SOCKNAME","size":16, "sockaddr": {"family":"AF_INET","address":"8.8.8.8","port":853}},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.1.10","port":36228}},
+    {"type":6,"type_name":"RESP_LENGTH","size":2,"value":26624},
+    {"type":7,"type_name":"RESP_SENDTO","size":104, "raw_data": "303981800001000300000000037777770472697065036e65740000010001c00c000500010000002f001e037777770472697065036e65740363646e0a636c6f7564666c617265c015c02a000100010000012b00046812152cc02a000100010000012b00046812142c"}
+  ],
+  "total_responses": 4
+}

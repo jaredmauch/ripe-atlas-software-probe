@@ -1,0 +1,26 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evping-data//evping-s0.net",
+  "responses": [
+    {"type":6,"type_name":"RESP_LENGTH","size":48},
+    {"type":7,"type_name":"RESP_SENDTO","size":28, "raw_data": "0a000000000000002001067c02e8000300000000c10000a400000000"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:470:d16a:10:a00:27ff:fead:1276","port":58,"flowinfo":0,"scope_id":0}},
+    {"type":3,"type_name":"RESP_DSTADDR","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:470:d16a:10:a00:27ff:fead:1276","port":58,"flowinfo":0,"scope_id":0}},
+    {"type":1,"type_name":"RESP_PACKET","size":40, "packet_data": "8100cccb2a0000010300000000000000b80b000000000000000000002a2a2a2a2a2a2a2a00000000"},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:3::c100:a4","port":0,"flowinfo":0,"scope_id":0}},
+    {"type":5,"type_name":"RESP_RCVDTTL","size":28},
+    {"type":4,"type_name":"RESP_PEERNAME","size":1},
+    {"type":3,"type_name":"RESP_DSTADDR","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:470:d16a:10:a00:27ff:fead:1276","port":58,"flowinfo":0,"scope_id":0}},
+    {"type":1,"type_name":"RESP_PACKET","size":40, "packet_data": "8100fac22a00000205000000000000008813000000000000000000002a2a2a2a2a2a2a2a00000000"},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:3::c100:a4","port":0,"flowinfo":0,"scope_id":0}},
+    {"type":5,"type_name":"RESP_RCVDTTL","size":28},
+    {"type":4,"type_name":"RESP_PEERNAME","size":1},
+    {"type":3,"type_name":"RESP_DSTADDR","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:470:d16a:10:a00:27ff:fead:1276","port":58,"flowinfo":0,"scope_id":0}},
+    {"type":1,"type_name":"RESP_PACKET","size":40, "packet_data": "810028ba2a0000030700000000000000581b000000000000000000002a2a2a2a2a2a2a2a00000000"},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:3::c100:a4","port":0,"flowinfo":0,"scope_id":0}},
+    {"type":5,"type_name":"RESP_RCVDTTL","size":28},
+    {"type":4,"type_name":"RESP_PEERNAME","size":1}
+  ],
+  "total_responses": 18
+}

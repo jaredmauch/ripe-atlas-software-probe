@@ -1,0 +1,20 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evtdig-data//evtdig-https.net",
+  "responses": [
+    {"type":2,"type_name":"RESP_SOCKNAME","size":28, "sockaddr": {"family":"AF_INET6","address":"2606:4700::6810:f9f9","port":443,"flowinfo":0,"scope_id":0}},
+    {"type":3,"type_name":"RESP_DSTADDR","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:1::c100:10a","port":60222,"flowinfo":0,"scope_id":0}},
+    {"type":7,"type_name":"RESP_SENDTO","size":9, "raw_data": "000012040000000000"},
+    {"type":7,"type_name":"RESP_SENDTO","size":18, "raw_data": "000300000100000400010000000500ffffff"},
+    {"type":7,"type_name":"RESP_SENDTO","size":9, "raw_data": "000004080000000000"},
+    {"type":7,"type_name":"RESP_SENDTO","size":4, "raw_data": "7fff0000"},
+    {"type":7,"type_name":"RESP_SENDTO","size":9, "raw_data": "000000040100000000"},
+    {"type":7,"type_name":"RESP_SENDTO","size":9, "raw_data": "0000be010400000001"},
+    {"type":7,"type_name":"RESP_SENDTO","size":190, "raw_data": "886196df697e941014cb6d0a08020a8115c0b7700ea98b46ff5f901d75d0620d263d4c495216a4a840e62f5c82081a54012a408a24ab585ed6950958d27f96046e36e81c24ac80000000fb636597c200000000001f40872f9aca44ac44ffbfa47e561cc581c034f001f4a585acf6256b6c341fcce94d68b8c31616b3d895adb0cb9283db24b40ec2ae43d2c124a9624c662328c87a982f9aca44ac44ff3f76872507b649681d85408524ab583f5f8f71d0902495a8c6dbc003edad0e8ddf"},
+    {"type":7,"type_name":"RESP_SENDTO","size":9, "raw_data": "000068000000000001"},
+    {"type":7,"type_name":"RESP_SENDTO","size":104, "raw_data": "303981800001000300000000037777770472697065036e65740000010001c00c000500010000003c001e037777770472697065036e65740363646e0a636c6f7564666c617265c015c02a000100010000012c00046812142cc02a000100010000012c00046812152c"},
+    {"type":7,"type_name":"RESP_SENDTO","size":9, "raw_data": "000000000100000001"}
+  ],
+  "total_responses": 12
+}

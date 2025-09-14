@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evtdig-data//evtdig-resolv.net",
+  "responses": [
+    {"type":4,"type_name":"RESP_PEERNAME","size":4},
+    {"type":5,"type_name":"RESP_RCVDTTL","size":12},
+    {"type":5,"type_name":"RESP_RCVDTTL","size":26},
+    {"type":5,"type_name":"RESP_RCVDTTL","size":12},
+    {"type":10,"type_name":"UNKNOWN","size":48, "raw_data": "00000080020000000200000011000000100000000000000090a2f4010000000000000000000000000000000000000000"},
+    {"type":11,"type_name":"UNKNOWN","size":16, "raw_data": "02000035c10013650000000000000000"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.1.10","port":36992}},
+    {"type":1,"type_name":"RESP_PACKET","size":104, "packet_data": "303981800001000300000000037777770472697065036e65740000010001c00c0005000100000029001e037777770472697065036e65740363646e0a636c6f7564666c617265c015c02a000100010000004700046812142cc02a000100010000004700046812152c"},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.19.101","port":53}}
+  ],
+  "total_responses": 9
+}

@@ -1,0 +1,20 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evntp-data//evntp-B43.net",
+  "responses": [
+    {"type":5,"type_name":"RESP_RCVDTTL","size":48},
+    {"type":6,"type_name":"RESP_LENGTH","size":28},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":28, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:1::c100:10a","port":49441,"flowinfo":0,"scope_id":0}},
+    {"type":4,"type_name":"RESP_PEERNAME","size":16, "sockaddr": {"family":"AF_UNKNOWN"}},
+    {"type":1,"type_name":"RESP_PACKET","size":48, "packet_data": "240103ee000000000000004547505300e4a175fb0962eaa2e4a175fe73264a16e4a175fe733e90d1e4a175fe734de509"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:14::","port":123,"flowinfo":0,"scope_id":88209}},
+    {"type":4,"type_name":"RESP_PEERNAME","size":16, "sockaddr": {"family":"AF_UNKNOWN"}},
+    {"type":1,"type_name":"RESP_PACKET","size":48, "packet_data": "240103ee000000000000004547505300e4a175fb0962eaa2e4a175fe7379fa97e4a175fe738ec153e4a175fe739fb844"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:14::","port":123,"flowinfo":0,"scope_id":88209}},
+    {"type":4,"type_name":"RESP_PEERNAME","size":16, "sockaddr": {"family":"AF_UNKNOWN"}},
+    {"type":1,"type_name":"RESP_PACKET","size":48, "packet_data": "240103ee000000000000004547505300e4a175fb0962eaa2e4a175fe73bcb1cce4a175fe73d048e8e4a175fe73e16834"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET6","address":"2001:67c:2e8:14::","port":123,"flowinfo":0,"scope_id":88209}}
+  ],
+  "total_responses": 12
+}

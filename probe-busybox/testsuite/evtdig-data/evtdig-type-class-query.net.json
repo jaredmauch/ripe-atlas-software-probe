@@ -1,0 +1,13 @@
+{
+  "version": "2.0",
+  "source": "net_to_json converter",
+  "original_file": "probe-busybox/testsuite/evtdig-data//evtdig-type-class-query.net",
+  "responses": [
+    {"type":10,"type_name":"UNKNOWN","size":48, "raw_data": "00000080020000000200000011000000100000000000000090d3b9010000000000000000000000000000000000000000"},
+    {"type":11,"type_name":"UNKNOWN","size":16, "raw_data": "02000035c10009070000000000000000"},
+    {"type":3,"type_name":"RESP_DSTADDR","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.1.10","port":41999}},
+    {"type":1,"type_name":"RESP_PACKET","size":12, "packet_data": "303980050000000000000000"},
+    {"type":2,"type_name":"RESP_SOCKNAME","size":16, "sockaddr": {"family":"AF_INET","address":"193.0.9.7","port":53}}
+  ],
+  "total_responses": 5
+}
